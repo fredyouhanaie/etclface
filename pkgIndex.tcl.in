@@ -1,0 +1,2 @@
+
+package ifneeded etclface 0.1 [list load [file join @CMAKE_INSTALL_PREFIX@ lib libetclface.so]]
