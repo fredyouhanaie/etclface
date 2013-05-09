@@ -54,6 +54,7 @@ set (CWEB_MAIN
 set (CWEB_SRCS
 	${CWEB_MAIN}
 	${CMAKE_SOURCE_DIR}/boilerplate.w
+	${CMAKE_SOURCE_DIR}/etclface-code.w
 )
 
 # library source, generated from *.w files
