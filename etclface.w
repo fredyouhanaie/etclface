@@ -74,14 +74,59 @@
 %% To a C programmer NULL is more familiar than Lambda.
 @s NULL normal
 
-@*Introduction. \.{etclface} is a Tcl/Tk extension that exposes a minimal
+%% Treat the Tcl data types as reserved words during typesetting.
+@s ClientData int
+@s Tcl_Obj int
+@s Tcl_Interp int
+@s Tcl_ObjCmdProc int
+
+
+@*Introduction.
+
+\.{etclface} is a Tcl/Tk extension that exposes a minimal
 set of \.{erl\_interface} functions. \.{erl\_interface} is part of the
 core Erlang/OTP distribution.
 
-@*Installation. The build and installation is done using \.{cmake},
+Just like Erlang, Tcl/Tk is a mature scripting language. In fact both
+languages started over 25 years ago in the mid-eighties. As a
+result of this there is a large body of applications written in the
+two languages. Although there are similar applications written in both
+languages, such as web servers, there are also other software that are
+only available in one
+
+The purpose of this extension is twofold:
+
+\parindent=1cm
+\bul To allow erlang process to communicate with software written
+in Tcl/Tk, and
+
+\bul to allow Tcl/Tk software to leverage the scalable concurrent
+environment provided by erlang/OTP.
+\parindent=0pt
+
+@*Implementation Notes.
+
+There are two sets of communication modules within \.{erl\_interface},
+the old \.{erl\_*} ones and the newer \.{ei\_*} set. For \.{etclface}
+we are using the latter.
+
+@ Data Types.
+
+Tcl understands one data type only, character strings, although the
+underlying commands can interpret the character strings in different ways,
+and one way of combining basic types, lists.
+
+Erlang, on the other hand, has several types, and the extension needs
+to be able to convert between the types appropriately.
+
+@ Components.
+
+The basic interface is written in \Cee.
+
+@ Installation. The build and installation is done using \.{cmake},
 see \url{http://cmake.org}.
 
-@*Testing. There are two sets of test scripts, one for tests initiated
+@ Testing. There are two sets of test scripts, one for tests initiated
 from the Erlang side, and the other for tests run on the Tcl side.
 
 @i etclface-code.w
