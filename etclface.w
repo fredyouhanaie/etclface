@@ -71,6 +71,8 @@
 %% the following needs to be repeated for each set of new bullet points
 \count255=1
 
+\def\etf{\.{etclface}\,}
+
 %% To a C programmer NULL is more familiar than Lambda.
 @s NULL normal
 
@@ -83,16 +85,17 @@
 
 @*Introduction.
 
-\.{etclface} is a Tcl/Tk extension that exposes a minimal
-set of \.{erl\_interface} functions. \.{erl\_interface} is part of the
-core Erlang/OTP distribution.
+\etf is a Tcl/Tk extension that exposes a minimal set of
+\.{erl\_interface} functions.  \.{erl\_interface} is part of the core
+Erlang/OTP distribution.
 
-Just like Erlang, Tcl/Tk is a mature scripting language. In fact both
-languages started over 25 years ago in the mid-eighties. As a
-result of this there is a large body of applications written in the
+Just like Erlang, Tcl/Tk is a mature dynamic scripting language.
+In fact both languages started over 25 years ago in the mid-eighties.
+As a result of this there is a large body of applications written in the
 two languages. Although there are similar applications written in both
 languages, such as web servers, there are also other software that are
-only available in one
+only available in one or the other language. \etf provides a conduit
+between applications written in the two languages.
 
 The purpose of this extension is twofold:
 
@@ -101,14 +104,14 @@ The purpose of this extension is twofold:
 in Tcl/Tk, and
 
 \bul to allow Tcl/Tk software to leverage the scalable concurrent
-environment provided by erlang/OTP.
+environment provided by Erlang/OTP.
 \parindent=0pt
 
 @*Implementation Notes.
 
-There are two sets of communication modules within \.{erl\_interface},
-the old \.{erl\_*} ones and the newer \.{ei\_*} set. For \.{etclface}
-we are using the latter.
+There are two sets of communication modules within \.{erl\_interface}, the
+old \.{erl\_*} ones and the newer \.{ei\_*} set. For \etf we are using the
+latter. See \url{http://www.erlang.org/doc/apps/erl\_interface}
 
 @ Data Types.
 
@@ -133,7 +136,7 @@ from the Erlang side, and the other for tests run on the Tcl side.
 
 @*Licensing of the Software.
 
-\.{etclface} is free software, you can redistribute it and/or modify it
+\etf is free software, you can redistribute it and/or modify it
 under the terms of the BSD License, see
 \url{http://opensource.org/licenses/BSD-2-Clause}.
 
