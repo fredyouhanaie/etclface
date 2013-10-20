@@ -63,11 +63,11 @@ Etclface_Init(Tcl_Interp *ti)
 		return TCL_ERROR;
 	}
 
-	Tcl_CreateObjCommand(ti, "etclface::init", (Tcl_ObjCmdProc *) erli_cinit, NULL, NULL);
+	Tcl_CreateObjCommand(ti, "etclface::init", (Tcl_ObjCmdProc *) Etclface_cinit, NULL, NULL);
 @#
-	Tcl_CreateObjCommand(ti, "etclface::connect", (Tcl_ObjCmdProc *) erli_connect, NULL, NULL);
+	Tcl_CreateObjCommand(ti, "etclface::connect", (Tcl_ObjCmdProc *) Etclface_connect, NULL, NULL);
 @#
-	Tcl_CreateObjCommand(ti, "etclface::reg_send", (Tcl_ObjCmdProc *) erli_reg_send, NULL, NULL);
+	Tcl_CreateObjCommand(ti, "etclface::reg_send", (Tcl_ObjCmdProc *) Etclface_reg_send, NULL, NULL);
 
 	return TCL_OK;
 @#
@@ -85,7 +85,7 @@ be de-allocated when not needed.
 
 @<erl interface cinit@>=
 static int
-erli_cinit(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+Etclface_cinit(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 {
 	ei_cnode *ec;
 	char ecstr[100];
@@ -98,7 +98,7 @@ erli_cinit(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 
 	nodename = Tcl_GetString(objv[1]);
 	cookie = Tcl_GetString(objv[2]);
-
+@#
 	ec = (ei_cnode *)Tcl_AttemptAlloc(sizeof(ei_cnode));
 	if (ec == NULL) {
 		Tcl_SetResult(ti, "Could not allocate memory for ei_cnode", TCL_STATIC);
@@ -126,7 +126,7 @@ should be used for subsequent calls to various send/receive commands.
 
 @<erl interface connect@>=
 static int
-erli_connect(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+Etclface_connect(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 {
 	if (objc != 3) {
 		Tcl_WrongNumArgs(ti,1 ,objv, "ec nodename");
@@ -157,7 +157,7 @@ erli_connect(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 @#
 }
 
-@ \.{erli\_reg\_send ec fd server term ?term...?}
+@ \.{reg\_send ec fd server term ?term...?}
 
 Send a message consisting of one or more \.{term}s to a registered process
 \.{server}, using the \.{ec} handle otained from \.{etclface::init}
@@ -165,7 +165,7 @@ and \.{fd} obtained from \.{etclface::connect}.
 
 @<erl interface reg send@>=
 static int
-erli_reg_send(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+Etclface_reg_send(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 {
 	if (objc < 5) {
 		Tcl_WrongNumArgs(ti,1 ,objv, "ec fd server term ?term...?");
