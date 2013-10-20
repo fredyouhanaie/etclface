@@ -22,21 +22,17 @@ project (etclface C)
 # These can be overridden on command line, or via edit_cache target
 #
 # We need the directories for the erl_interface lib and include files
-# These are normally under ERL_ROOT/lib/erl_interface-x.y.z/
+# These are normally under ERL_ROOT/usr/lib and ERL_ROOT/usr/include
 # The erlang shell, erl, is normally under ERL_ROOT/bin, so we use erl
 # to find the ERL_ROOT directory
 #
 find_program (ERL_PROG_PATH "erl")
 get_filename_component(ERL_PATH ${ERL_PROG_PATH} PATH)
 get_filename_component(ERL_ROOT ${ERL_PATH} PATH)
-file(GLOB ERLIFACE_DIR "${ERL_ROOT}/lib/erl_interface-*")
-##set (ERLIFACE_DIR "/opt/erlang-R16B/lib/erl_interface-3.7.11"
-	##CACHE PATH "erl_interface root directory."
-##)
-set (ERLIFACE_INC_DIR "${ERLIFACE_DIR}/include"
+set (ERLIFACE_INC_DIR "${ERL_ROOT}/usr/include"
 	CACHE PATH "erl_interface.h include directory."
 )
-set (ERLIFACE_LIB_DIR "${ERLIFACE_DIR}/lib"
+set (ERLIFACE_LIB_DIR "${ERL_ROOT}/usr/lib"
 	CACHE PATH "erl_interface and ei lib directory."
 )
 unset (ERL_PROG_PATH CACHE)
