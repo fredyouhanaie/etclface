@@ -86,7 +86,7 @@
 @*Introduction.
 
 \etf is a Tcl/Tk extension that exposes a minimal set of
-\.{erl\_interface} functions.  \.{erl\_interface} is part of the core
+\.{erl\_interface} functions. \.{erl\_interface} is part of the core
 Erlang/OTP distribution.
 
 Just like Erlang, Tcl/Tk is a mature dynamic scripting language.
@@ -111,7 +111,7 @@ environment provided by Erlang/OTP.
 
 There are two sets of communication modules within \.{erl\_interface}, the
 old \.{erl\_*} ones and the newer \.{ei\_*} set. For \etf we are using the
-latter. See \url{http://www.erlang.org/doc/apps/erl\_interface}
+latter.
 
 @ Data Types.
 
