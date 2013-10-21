@@ -82,6 +82,11 @@
 @s Tcl_Interp int
 @s Tcl_ObjCmdProc int
 
+%% Treat the erl_interface data types as reserved words during typesetting.
+@s ei_cnode int
+@s ei_x_buff int
+@s erlang_pid int
+@s Erl_IpAddr int
 
 @*Introduction.
 
