@@ -29,7 +29,9 @@
 %% NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 %% SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-@*The code.
+@*The Code.
+
+The \etf commands are collected in a number of groups.
 
 @c
 
@@ -37,15 +39,19 @@
 #include <erl_interface.h>
 #include <ei.h>
 
-@<erl interface cinit@>;
-@<erl interface connect@>;
-@<erl interface reg send@>;
+@<Initialization commands@>;
+@<Connection commands@>;
+@<Send commands@>;
+@<Receive commands@>;
+@<Encode commands@>;
+@<Decode commands@>;
+@<Utility commands@>;
 @<AppInit@>;
 
 @ We follow the standard format for all Tcl extensions. \.{Etclface\_Init}
 initializes the library and declares the commands. We require \.{Tcl}
-version 8.5, This vesion has been around for some time now, so we can
-expect it to be available at most sites.
+version 8.5 or higher, This vesion has been around for some time now,
+so we can expect it to be available at most sites.
 
 @<AppInit@>=
 int
@@ -63,41 +69,55 @@ Etclface_Init(Tcl_Interp *ti)
 		return TCL_ERROR;
 	}
 
-	Tcl_CreateObjCommand(ti, "etclface::init", (Tcl_ObjCmdProc *) Etclface_cinit, NULL, NULL);
-@#
+	Tcl_CreateObjCommand(ti, "etclface::init", (Tcl_ObjCmdProc *) Etclface_init, NULL, NULL);
+	Tcl_CreateObjCommand(ti, "etclface::xinit", (Tcl_ObjCmdProc *) Etclface_xinit, NULL, NULL);
 	Tcl_CreateObjCommand(ti, "etclface::connect", (Tcl_ObjCmdProc *) Etclface_connect, NULL, NULL);
-@#
 	Tcl_CreateObjCommand(ti, "etclface::reg_send", (Tcl_ObjCmdProc *) Etclface_reg_send, NULL, NULL);
 
 	return TCL_OK;
 @#
 }
 
-@ \.{etclface::init nodename cookie}
+@*1Initialization Commands.
+
+\.{erl\_interface} provides two functions for initializing
+the local \.{cnode} data structures, \.{ei\_connect\_init()} and
+\.{ei\_connect\_xinit()}. Although it is possible to use a single command
+with two distinct calling sequences, at least for now, we will stay with
+two separate commands.
+
+If successful, both commands will return a stringified handle to the
+\.{ec} structure in the form of a hexadecimal number prefixed with
+\.{ec0x}, e.g. \.{ec0x88074f0}. The storage for the structure is allocated
+dynamically, so it will need to be de-allocated when not needed.
+
+If the \.{cookie} parameter is missing, it will be obtained from
+\.{erlang.cookie} file in user's home directory.
+
+@*2\.{etclface::init nodename ?cookie?}.
 
 Initialize and return a handle to an \.{ec} structure, with own name
 \.{nodename} and \.{cookie}.
 
-If successful, the command will return a stringified handle to the \.{ec}
-structure in the form of a hexadecimal number prefixed with \.{ec0x}. The
-storage for the structure is allocated dynamically, so it will need to
-be de-allocated when not needed.
-
-@<erl interface cinit@>=
+@<Initialization commands@>=
 static int
-Etclface_cinit(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+Etclface_init(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 {
 	ei_cnode *ec;
-	char ecstr[100];
+	char echandle[100];
 	char *nodename, *cookie;
 
-	if (objc != 3) {
-		Tcl_WrongNumArgs(ti,1 ,objv, "nodename cookie");
+	if ((objc<2) || (objc>3)) {
+		Tcl_WrongNumArgs(ti, 1, objv, "nodename ?cookie?");
 		return TCL_ERROR;
 	}
 
 	nodename = Tcl_GetString(objv[1]);
-	cookie = Tcl_GetString(objv[2]);
+	if (objc == 3) {
+		cookie = Tcl_GetString(objv[2]);
+	} else {
+		cookie = NULL;
+	}
 @#
 	ec = (ei_cnode *)Tcl_AttemptAlloc(sizeof(ei_cnode));
 	if (ec == NULL) {
@@ -110,13 +130,69 @@ Etclface_cinit(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 		return TCL_ERROR;
 	}
 
-	sprintf(ecstr, "ec0x%0x", ec);
-	Tcl_SetResult(ti, ecstr, TCL_VOLATILE);
+	sprintf(echandle, "ec%p", ec);
+	Tcl_SetResult(ti, echandle, TCL_VOLATILE);
 	return TCL_OK;
 @#
 }
 
-@ \.{etclface::connect ec nodename}
+@*2\.{etclface::xinit host alive node ipaddr ?cookie?}.
+
+Initialize and return a handle to an \.{ec} structure, with own name
+\.{nodename} and \.{cookie}.
+
+@<Initialization commands@>=
+static int
+Etclface_xinit(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+{
+	ei_cnode	*ec;
+	char		echandle[100];
+	char		*host, *alive, *node, *addr, *cookie;
+	struct in_addr	inaddr;
+	Erl_IpAddr	ipaddr = &inaddr;
+
+	if ((objc<5) || (objc>6)) {
+		Tcl_WrongNumArgs(ti, 1, objv, "host alive node ipaddr ?cookie?");
+		return TCL_ERROR;
+	}
+
+	host  = Tcl_GetString(objv[1]);
+	alive = Tcl_GetString(objv[2]);
+	node  = Tcl_GetString(objv[3]);
+
+	addr  = Tcl_GetString(objv[4]);
+
+	if (!inet_aton(addr, &inaddr)) {
+		Tcl_SetResult(ti, "Invalid ipaddr", TCL_STATIC);
+		return TCL_ERROR;
+	}
+
+	if (objc == 6) {
+		cookie = Tcl_GetString(objv[5]);
+	} else {
+		cookie = NULL;
+	}
+@#
+	ec = (ei_cnode *)Tcl_AttemptAlloc(sizeof(ei_cnode));
+	if (ec == NULL) {
+		Tcl_SetResult(ti, "Could not allocate memory for ei_cnode", TCL_STATIC);
+		return TCL_ERROR;
+	}
+
+	if (ei_connect_xinit(ec, host, alive, node, ipaddr, cookie, (short)0) < 0) {
+		Tcl_SetResult(ti, "ei_connect_xinit failed", TCL_STATIC);
+		return TCL_ERROR;
+	}
+
+	sprintf(echandle, "ec%p", ec);
+	Tcl_SetResult(ti, echandle, TCL_VOLATILE);
+	return TCL_OK;
+@#
+}
+
+@*1Connection Commands.
+
+@*2\.{etclface::connect ec nodename}.
 
 Establish a connection to node \.{nodename} using the \.{ec} handle
 obtained from \.{etclface::init}.
@@ -124,12 +200,12 @@ obtained from \.{etclface::init}.
 If successful, the command will return the file descriptor \.{fd}, which
 should be used for subsequent calls to various send/receive commands.
 
-@<erl interface connect@>=
+@<Connection commands@>=
 static int
 Etclface_connect(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 {
 	if (objc != 3) {
-		Tcl_WrongNumArgs(ti,1 ,objv, "ec nodename");
+		Tcl_WrongNumArgs(ti, 1, objv, "ec nodename");
 		return TCL_ERROR;
 	}
 
@@ -145,7 +221,7 @@ Etclface_connect(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 	if ((fd = ei_connect(ec, nodename)) < 0) {
 		char errstr[100];
 		sprintf(errstr, "ei_connect failed (fd=%d, erl_errno=%d)", fd, erl_errno);
-		Tcl_SetResult(ti, errstr, TCL_STATIC);
+		Tcl_SetResult(ti, errstr, TCL_VOLATILE);
 		return TCL_ERROR;
 	}
 
@@ -157,18 +233,21 @@ Etclface_connect(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 @#
 }
 
-@ \.{reg\_send ec fd server term ?term...?}
+
+@*1Send Commands.
+
+@*2\.{reg\_send ec fd server term ?term...?}.
 
 Send a message consisting of one or more \.{term}s to a registered process
 \.{server}, using the \.{ec} handle otained from \.{etclface::init}
 and \.{fd} obtained from \.{etclface::connect}.
 
-@<erl interface reg send@>=
+@<Send commands@>=
 static int
 Etclface_reg_send(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 {
 	if (objc < 5) {
-		Tcl_WrongNumArgs(ti,1 ,objv, "ec fd server term ?term...?");
+		Tcl_WrongNumArgs(ti, 1, objv, "ec fd server term ?term...?");
 		return TCL_ERROR;
 	}
 
@@ -195,10 +274,47 @@ Etclface_reg_send(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[]
 		ei_x_free(&x);
 		char errstr[100];
 		sprintf(errstr, "ei_reg_send: [%d] %s", erl_errno, strerror(erl_errno));
-		Tcl_SetResult(ti, errstr, TCL_STATIC);
+		Tcl_SetResult(ti, errstr, TCL_VOLATILE);
 		return TCL_ERROR;
 	}
 	ei_x_free(&x);
 	return TCL_OK;
 }
+
+@*1Receive Commands.
+
+@<Receive commands@>=
+static int
+Etclface_receive(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+{
+	return TCL_OK;
+}
+
+@*1Encode Commands.
+
+@<Encode commands@>=
+static int
+Etclface_encode(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+{
+	return TCL_OK;
+}
+
+@*1Decode Commands.
+
+@<Decode commands@>=
+static int
+Etclface_decode(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+{
+	return TCL_OK;
+}
+
+@*1Utility Commands.
+
+@<Utility commands@>=
+static int
+Etclface_self(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+{
+	return TCL_OK;
+}
+
 
