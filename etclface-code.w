@@ -39,6 +39,7 @@ The \etf commands are collected in a number of groups.
 #include <erl_interface.h>
 #include <ei.h>
 
+@<Internal helper functions@>;
 @<Initialization commands@>;
 @<Connection commands@>;
 @<Send commands@>;
@@ -105,23 +106,18 @@ Initialize and return a handle to an \.{ec} structure, with own name
 static int
 Etclface_init(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 {
+	char		*nodename, *cookie;
+	ei_cnode	*ec;
+	char		echandle[100];
 
 	if ((objc<2) || (objc>3)) {
 		Tcl_WrongNumArgs(ti, 1, objv, "nodename ?cookie?");
 		return TCL_ERROR;
 	}
 
-	char *nodename;
 	nodename = Tcl_GetString(objv[1]);
+	cookie = (objc == 2) ? NULL : Tcl_GetString(objv[2]);
 
-	char *cookie;
-	if (objc == 3) {
-		cookie = Tcl_GetString(objv[2]);
-	} else {
-		cookie = NULL;
-	}
-@#
-	ei_cnode *ec;
 	ec = (ei_cnode *)Tcl_AttemptAlloc(sizeof(ei_cnode));
 	if (ec == NULL) {
 		Tcl_SetResult(ti, "Could not allocate memory for ei_cnode", TCL_STATIC);
@@ -133,7 +129,6 @@ Etclface_init(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 		return TCL_ERROR;
 	}
 
-	char echandle[100];
 	sprintf(echandle, "ec%p", ec);
 	Tcl_SetResult(ti, echandle, TCL_VOLATILE);
 	return TCL_OK;
@@ -149,38 +144,25 @@ Initialize and return a handle to an \.{ec} structure, with own name
 static int
 Etclface_xinit(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 {
+	char		*alive, *cookie, *host, *node;
+	Erl_IpAddr	ipaddr;
+	ei_cnode	*ec;
+	char		echandle[100];
 
 	if ((objc<5) || (objc>6)) {
 		Tcl_WrongNumArgs(ti, 1, objv, "host alive node ipaddr ?cookie?");
 		return TCL_ERROR;
 	}
 
-	char *host;
 	host  = Tcl_GetString(objv[1]);
-
-	char *alive;
 	alive = Tcl_GetString(objv[2]);
-
-	char *node;
 	node  = Tcl_GetString(objv[3]);
 
-	char *addr;
-	addr  = Tcl_GetString(objv[4]);
-	struct in_addr	inaddr;
-	Erl_IpAddr	ipaddr = &inaddr;
-	if (!inet_aton(addr, &inaddr)) {
-		Tcl_SetResult(ti, "Invalid ipaddr", TCL_STATIC);
+	if (get_ipaddr(ti, objv[4], ipaddr) == TCL_ERROR)
 		return TCL_ERROR;
-	}
 
-	char *cookie;
-	if (objc == 6) {
-		cookie = Tcl_GetString(objv[5]);
-	} else {
-		cookie = NULL;
-	}
-@#
-	ei_cnode *ec;
+	cookie = (objc == 5) ? NULL : Tcl_GetString(objv[5]);
+
 	ec = (ei_cnode *)Tcl_AttemptAlloc(sizeof(ei_cnode));
 	if (ec == NULL) {
 		Tcl_SetResult(ti, "Could not allocate memory for ei_cnode", TCL_STATIC);
@@ -192,7 +174,6 @@ Etclface_xinit(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 		return TCL_ERROR;
 	}
 
-	char echandle[100];
 	sprintf(echandle, "ec%p", ec);
 	Tcl_SetResult(ti, echandle, TCL_VOLATILE);
 	return TCL_OK;
@@ -201,33 +182,55 @@ Etclface_xinit(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 
 @*1Connection Commands.
 
-@*2\.{etclface::connect ec nodename}.
+\.{erl\_interface} provides four functions for establishing a connection
+to another node. Two, \.{ei\_connect()} and \.{ei\_connect\_tmo()},
+expect a single remote nodename in the form of \.{alivename@@hostname},
+while the other two, \.{ei\_xconnect()} and \.{ei\_xconnect\_tmo()},
+expect an IP address and an alivename. Within each pair, one function
+accepts a \.{timeout} value in milliseconds, while the other will wait
+indefinitely for a connection. Using $0$ for the timeout value is the
+same as having no timeout.
+
+Here we provide just two commands, \.{connect} and \.{xconnect}. Both
+can be called with an optional timeout value.
+
+If successful, both commands will return the socket file descriptor
+\.{fd}, which should be used for subsequent calls to various send/receive
+commands.
+
+@*2\.{etclface::connect ec nodename ?timeout?}.
 
 Establish a connection to node \.{nodename} using the \.{ec} handle
-obtained from \.{etclface::init}.
-
-If successful, the command will return the file descriptor \.{fd}, which
-should be used for subsequent calls to various send/receive commands.
+obtained from \.{etclface::init} or \.{xinit}.
 
 @<Connection commands@>=
 static int
 Etclface_connect(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 {
-	if (objc != 3) {
-		Tcl_WrongNumArgs(ti, 1, objv, "ec nodename");
+	char *echandle;
+	ei_cnode *ec;
+	char *nodename;
+	unsigned timeout;
+
+	if ((objc<3) || (objc>4)) {
+		Tcl_WrongNumArgs(ti, 1, objv, "ec nodename ?timeout?");
 		return TCL_ERROR;
 	}
 
-	char *echandle;
 	echandle = Tcl_GetString(objv[1]);
-	ei_cnode *ec;
 	sscanf(echandle, "ec%p", &ec);
 
-	char *nodename;
 	nodename = Tcl_GetString(objv[2]);
 
+	if (objc == 3) {
+		timeout = 0;
+	} else {
+		if (get_timeout(ti, objv[3], &timeout) == TCL_ERROR)
+			return TCL_ERROR;
+	}
+
 	int fd;
-	if ((fd = ei_connect(ec, nodename)) < 0) {
+	if ((fd = ei_connect_tmo(ec, nodename, timeout)) < 0) {
 		char errstr[100];
 		sprintf(errstr, "ei_connect failed (fd=%d, erl_errno=%d)", fd, erl_errno);
 		Tcl_SetResult(ti, errstr, TCL_VOLATILE);
@@ -240,6 +243,55 @@ Etclface_connect(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 
 	return TCL_OK;
 @#
+}
+
+@*2\.{etclface::xconnect ec ipaddr alivename ?timeout?}.
+
+Establish a connection to node \.{alivename@@ipaddr} using the \.{ec}
+handle obtained from \.{etclface::init} or \.{xinit}.
+
+@<Connection commands@>=
+static int
+Etclface_xconnect(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+{
+	char		*alivename, *echandle;
+	ei_cnode	*ec;
+	Erl_IpAddr	ipaddr;
+	unsigned	timeout;
+	int		fd;
+	char		fdstr[100];
+
+	if ((objc<4) || (objc>5)) {
+		Tcl_WrongNumArgs(ti, 1, objv, "ec ipaddr alivename ?timeout?");
+		return TCL_ERROR;
+	}
+
+	echandle = Tcl_GetString(objv[1]);
+	sscanf(echandle, "ec%p", &ec);
+
+	if (get_ipaddr(ti, objv[2], ipaddr) == TCL_ERROR)
+		return TCL_ERROR;
+
+	alivename = Tcl_GetString(objv[3]);
+
+	if (objc == 4) {
+		timeout = 0;
+	} else {
+		if (get_timeout(ti, objv[3], &timeout) == TCL_ERROR)
+			return TCL_ERROR;
+	}
+
+	if ((fd = ei_xconnect_tmo(ec, ipaddr, alivename, timeout)) < 0) {
+		char errstr[100];
+		sprintf(errstr, "ei_connect failed (fd=%d, erl_errno=%d)", fd, erl_errno);
+		Tcl_SetResult(ti, errstr, TCL_VOLATILE);
+		return TCL_ERROR;
+	}
+
+	sprintf(fdstr, "%d", fd);
+	Tcl_SetResult(ti, fdstr, TCL_VOLATILE);
+
+	return TCL_OK;
 }
 
 
@@ -370,6 +422,53 @@ Etclface_nodename(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[]
 	nodename = (char *)ei_thisnodename(ec);
 
 	Tcl_SetResult(ti, nodename, TCL_VOLATILE);
+	return TCL_OK;
+}
+
+@*1Internal Helper Functions.
+
+These are a set of functions for internal consumption, they help avoid
+duplication.
+
+@ Extract and convert a timeout value. Given a Tcl object pointer,
+attempt to convert to unsigned int, if successful, the timeout value
+isn returned in the \.{timeout} parameter.
+
+@<Internal helper functions@>=
+static int
+get_timeout(Tcl_Interp *ti, Tcl_Obj *tclobj, unsigned *timeout) {
+	int tmo;
+	if (Tcl_GetInt(ti, Tcl_GetString(tclobj), &tmo) == TCL_ERROR)
+		return TCL_ERROR;
+	if (tmo < 0) {
+		Tcl_SetResult(ti, "timeout cannot be negative", TCL_STATIC);
+		return TCL_ERROR;
+	}
+	*timeout = tmo;
+	return TCL_OK;
+}
+
+
+@ Extract and convert an IP address. Given a Tcl Object pointer, attempt
+to convert it to an \.{Erl\_IpAddr} type IP address. We allocate memory
+for the structure here, which should be freed by the caller when not
+needed.
+
+@<Internal helper functions@>=
+static int
+get_ipaddr(Tcl_Interp *ti, Tcl_Obj *tclobj, Erl_IpAddr ipaddr) {
+	struct in_addr	*inaddr;
+	inaddr = (struct in_addr *)Tcl_AttemptAlloc(sizeof(ei_cnode));
+	if (inaddr == NULL) {
+		Tcl_SetResult(ti, "Could not allocate memory for ipaddr", TCL_STATIC);
+		return TCL_ERROR;
+	}
+	if (!inet_aton(Tcl_GetString(tclobj), inaddr)) {
+		Tcl_Free((char *)inaddr);
+		Tcl_SetResult(ti, "Invalid ipaddr", TCL_STATIC);
+		return TCL_ERROR;
+	}
+	ipaddr = (Erl_IpAddr)inaddr;
 	return TCL_OK;
 }
 
