@@ -36,7 +36,7 @@
 %\fullpageheight=9in
 %%\setpage
 
-%%\parindent=0pt
+%%\parindent=0pt	%% NOTE parindent messes up the code indentation
 %%\parskip=1pt
 
 \def\title{etclface - Erlang/Tcl Interface}
@@ -104,13 +104,11 @@ between applications written in the two languages.
 
 The purpose of this extension is twofold:
 
-\parindent=1cm
-\bul To allow erlang process to communicate with software written
-in Tcl/Tk, and
+\bul To allow Erlang processes to communicate with software written in
+Tcl/Tk, and
 
-\bul to allow Tcl/Tk software to leverage the scalable concurrent
-environment provided by Erlang/OTP.
-\parindent=0pt
+\bul to allow Tcl/Tk software to leverage the concurrent environment
+provided by Erlang/OTP.
 
 @*Implementation Notes.
 
