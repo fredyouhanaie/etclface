@@ -73,6 +73,8 @@ Etclface_Init(Tcl_Interp *ti)
 	Tcl_CreateObjCommand(ti, "etclface::xinit", (Tcl_ObjCmdProc *) Etclface_xinit, NULL, NULL);
 	Tcl_CreateObjCommand(ti, "etclface::connect", (Tcl_ObjCmdProc *) Etclface_connect, NULL, NULL);
 	Tcl_CreateObjCommand(ti, "etclface::reg_send", (Tcl_ObjCmdProc *) Etclface_reg_send, NULL, NULL);
+	Tcl_CreateObjCommand(ti, "etclface::self", (Tcl_ObjCmdProc *) Etclface_self, NULL, NULL);
+	Tcl_CreateObjCommand(ti, "etclface::nodename", (Tcl_ObjCmdProc *) Etclface_nodename, NULL, NULL);
 
 	return TCL_OK;
 @#
@@ -103,22 +105,23 @@ Initialize and return a handle to an \.{ec} structure, with own name
 static int
 Etclface_init(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 {
-	ei_cnode *ec;
-	char echandle[100];
-	char *nodename, *cookie;
 
 	if ((objc<2) || (objc>3)) {
 		Tcl_WrongNumArgs(ti, 1, objv, "nodename ?cookie?");
 		return TCL_ERROR;
 	}
 
+	char *nodename;
 	nodename = Tcl_GetString(objv[1]);
+
+	char *cookie;
 	if (objc == 3) {
 		cookie = Tcl_GetString(objv[2]);
 	} else {
 		cookie = NULL;
 	}
 @#
+	ei_cnode *ec;
 	ec = (ei_cnode *)Tcl_AttemptAlloc(sizeof(ei_cnode));
 	if (ec == NULL) {
 		Tcl_SetResult(ti, "Could not allocate memory for ei_cnode", TCL_STATIC);
@@ -130,6 +133,7 @@ Etclface_init(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 		return TCL_ERROR;
 	}
 
+	char echandle[100];
 	sprintf(echandle, "ec%p", ec);
 	Tcl_SetResult(ti, echandle, TCL_VOLATILE);
 	return TCL_OK;
@@ -145,34 +149,38 @@ Initialize and return a handle to an \.{ec} structure, with own name
 static int
 Etclface_xinit(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 {
-	ei_cnode	*ec;
-	char		echandle[100];
-	char		*host, *alive, *node, *addr, *cookie;
-	struct in_addr	inaddr;
-	Erl_IpAddr	ipaddr = &inaddr;
 
 	if ((objc<5) || (objc>6)) {
 		Tcl_WrongNumArgs(ti, 1, objv, "host alive node ipaddr ?cookie?");
 		return TCL_ERROR;
 	}
 
+	char *host;
 	host  = Tcl_GetString(objv[1]);
+
+	char *alive;
 	alive = Tcl_GetString(objv[2]);
+
+	char *node;
 	node  = Tcl_GetString(objv[3]);
 
+	char *addr;
 	addr  = Tcl_GetString(objv[4]);
-
+	struct in_addr	inaddr;
+	Erl_IpAddr	ipaddr = &inaddr;
 	if (!inet_aton(addr, &inaddr)) {
 		Tcl_SetResult(ti, "Invalid ipaddr", TCL_STATIC);
 		return TCL_ERROR;
 	}
 
+	char *cookie;
 	if (objc == 6) {
 		cookie = Tcl_GetString(objv[5]);
 	} else {
 		cookie = NULL;
 	}
 @#
+	ei_cnode *ec;
 	ec = (ei_cnode *)Tcl_AttemptAlloc(sizeof(ei_cnode));
 	if (ec == NULL) {
 		Tcl_SetResult(ti, "Could not allocate memory for ei_cnode", TCL_STATIC);
@@ -184,6 +192,7 @@ Etclface_xinit(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 		return TCL_ERROR;
 	}
 
+	char echandle[100];
 	sprintf(echandle, "ec%p", ec);
 	Tcl_SetResult(ti, echandle, TCL_VOLATILE);
 	return TCL_OK;
@@ -309,12 +318,58 @@ Etclface_decode(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 }
 
 @*1Utility Commands.
+These are various commands for accessing the \.{ei\_cnode} data structures.
+
+@*2\.{etclface::self ec}.
+
+Return the "pseudo" pid of this process
 
 @<Utility commands@>=
 static int
 Etclface_self(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 {
+	if (objc != 2) {
+		Tcl_WrongNumArgs(ti, 1, objv, "ec");
+		return TCL_ERROR;
+	}
+
+	char *echandle;
+	echandle = Tcl_GetString(objv[1]);
+	ei_cnode *ec;
+	sscanf(echandle, "ec%p", &ec);
+
+	erlang_pid *self;
+	self = ei_self(ec);
+
+	char pidstr[100];
+	sprintf(pidstr, "<%d.%d.%d>", self->num, self->serial, self->creation);
+
+	Tcl_SetResult(ti, pidstr, TCL_VOLATILE);
 	return TCL_OK;
 }
 
+@*2\.{etclface::nodename ec}.
+
+Return the node name of the cnode.
+
+@<Utility commands@>=
+static int
+Etclface_nodename(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+{
+	if (objc != 2) {
+		Tcl_WrongNumArgs(ti, 1, objv, "ec");
+		return TCL_ERROR;
+	}
+
+	char *echandle;
+	echandle = Tcl_GetString(objv[1]);
+	ei_cnode *ec;
+	sscanf(echandle, "ec%p", &ec);
+
+	char *nodename;
+	nodename = (char *)ei_thisnodename(ec);
+
+	Tcl_SetResult(ti, nodename, TCL_VOLATILE);
+	return TCL_OK;
+}
 
