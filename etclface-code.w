@@ -73,9 +73,11 @@ Etclface_Init(Tcl_Interp *ti)
 	Tcl_CreateObjCommand(ti, "etclface::init", (Tcl_ObjCmdProc *) Etclface_init, NULL, NULL);
 	Tcl_CreateObjCommand(ti, "etclface::xinit", (Tcl_ObjCmdProc *) Etclface_xinit, NULL, NULL);
 	Tcl_CreateObjCommand(ti, "etclface::connect", (Tcl_ObjCmdProc *) Etclface_connect, NULL, NULL);
+	Tcl_CreateObjCommand(ti, "etclface::xconnect", (Tcl_ObjCmdProc *) Etclface_xconnect, NULL, NULL);
 	Tcl_CreateObjCommand(ti, "etclface::reg_send", (Tcl_ObjCmdProc *) Etclface_reg_send, NULL, NULL);
 	Tcl_CreateObjCommand(ti, "etclface::self", (Tcl_ObjCmdProc *) Etclface_self, NULL, NULL);
 	Tcl_CreateObjCommand(ti, "etclface::nodename", (Tcl_ObjCmdProc *) Etclface_nodename, NULL, NULL);
+	Tcl_CreateObjCommand(ti, "etclface::tracelevel", (Tcl_ObjCmdProc *) Etclface_tracelevel, NULL, NULL);
 
 	return TCL_OK;
 @#
@@ -158,7 +160,7 @@ Etclface_xinit(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 	alive = Tcl_GetString(objv[2]);
 	node  = Tcl_GetString(objv[3]);
 
-	if (get_ipaddr(ti, objv[4], ipaddr) == TCL_ERROR)
+	if (get_ipaddr(ti, objv[4], &ipaddr) == TCL_ERROR)
 		return TCL_ERROR;
 
 	cookie = (objc == 5) ? NULL : Tcl_GetString(objv[5]);
@@ -169,7 +171,9 @@ Etclface_xinit(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 		return TCL_ERROR;
 	}
 
-	if (ei_connect_xinit(ec, host, alive, node, ipaddr, cookie, (short)0) < 0) {
+	int res = ei_connect_xinit(ec, host, alive, node, ipaddr, cookie, (short)0);
+	Tcl_Free((char *)ipaddr);
+	if (res<0) {
 		Tcl_SetResult(ti, "ei_connect_xinit failed", TCL_STATIC);
 		return TCL_ERROR;
 	}
@@ -269,7 +273,7 @@ Etclface_xconnect(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[]
 	echandle = Tcl_GetString(objv[1]);
 	sscanf(echandle, "ec%p", &ec);
 
-	if (get_ipaddr(ti, objv[2], ipaddr) == TCL_ERROR)
+	if (get_ipaddr(ti, objv[2], &ipaddr) == TCL_ERROR)
 		return TCL_ERROR;
 
 	alivename = Tcl_GetString(objv[3]);
@@ -277,7 +281,7 @@ Etclface_xconnect(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[]
 	if (objc == 4) {
 		timeout = 0;
 	} else {
-		if (get_timeout(ti, objv[3], &timeout) == TCL_ERROR)
+		if (get_timeout(ti, objv[4], &timeout) == TCL_ERROR)
 			return TCL_ERROR;
 	}
 
@@ -425,6 +429,40 @@ Etclface_nodename(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[]
 	return TCL_OK;
 }
 
+@*2\.{etclface::tracelevel ?level?}.
+
+Get or Set the trace level using the \.{ei\_get\_tracelevel()} and
+\.{ei\_set\_tracelevel()} functions. On its own, the command will return
+the current trace level. If the an integer is supplied, the level will
+be set to that value.
+
+The trace levels are explained in the \.{ei\_connect} manual page.
+
+@<Utility commands@>=
+static int
+Etclface_tracelevel(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+{
+	int level;
+	char levelstr[100];
+
+	if ((objc<1) || (objc>2)) {
+		Tcl_WrongNumArgs(ti, 1, objv, "?level?");
+		return TCL_ERROR;
+	}
+
+	if (objc == 1) {
+		sprintf(levelstr, "%d", ei_get_tracelevel());
+		Tcl_SetResult(ti, levelstr, TCL_VOLATILE);
+		return TCL_OK;
+	}
+
+	if (Tcl_GetInt(ti, Tcl_GetString(objv[1]), &level) == TCL_ERROR)
+		return TCL_ERROR;
+	ei_set_tracelevel(level);
+
+	return TCL_OK;
+}
+
 @*1Internal Helper Functions.
 
 These are a set of functions for internal consumption, they help avoid
@@ -456,7 +494,7 @@ needed.
 
 @<Internal helper functions@>=
 static int
-get_ipaddr(Tcl_Interp *ti, Tcl_Obj *tclobj, Erl_IpAddr ipaddr) {
+get_ipaddr(Tcl_Interp *ti, Tcl_Obj *tclobj, Erl_IpAddr *ipaddr) {
 	struct in_addr	*inaddr;
 	inaddr = (struct in_addr *)Tcl_AttemptAlloc(sizeof(ei_cnode));
 	if (inaddr == NULL) {
@@ -468,7 +506,7 @@ get_ipaddr(Tcl_Interp *ti, Tcl_Obj *tclobj, Erl_IpAddr ipaddr) {
 		Tcl_SetResult(ti, "Invalid ipaddr", TCL_STATIC);
 		return TCL_ERROR;
 	}
-	ipaddr = (Erl_IpAddr)inaddr;
+	*ipaddr = (Erl_IpAddr)inaddr;
 	return TCL_OK;
 }
 
