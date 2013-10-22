@@ -75,6 +75,9 @@ Etclface_Init(Tcl_Interp *ti)
 	Tcl_CreateObjCommand(ti, "etclface::connect", (Tcl_ObjCmdProc *) Etclface_connect, NULL, NULL);
 	Tcl_CreateObjCommand(ti, "etclface::xconnect", (Tcl_ObjCmdProc *) Etclface_xconnect, NULL, NULL);
 	Tcl_CreateObjCommand(ti, "etclface::reg_send", (Tcl_ObjCmdProc *) Etclface_reg_send, NULL, NULL);
+	Tcl_CreateObjCommand(ti, "etclface::xb_new", (Tcl_ObjCmdProc *) Etclface_xb_new, NULL, NULL);
+	Tcl_CreateObjCommand(ti, "etclface::xb_free", (Tcl_ObjCmdProc *) Etclface_xb_free, NULL, NULL);
+	Tcl_CreateObjCommand(ti, "etclface::xb_show", (Tcl_ObjCmdProc *) Etclface_xb_show, NULL, NULL);
 	Tcl_CreateObjCommand(ti, "etclface::self", (Tcl_ObjCmdProc *) Etclface_self, NULL, NULL);
 	Tcl_CreateObjCommand(ti, "etclface::nodename", (Tcl_ObjCmdProc *) Etclface_nodename, NULL, NULL);
 	Tcl_CreateObjCommand(ti, "etclface::tracelevel", (Tcl_ObjCmdProc *) Etclface_tracelevel, NULL, NULL);
@@ -357,12 +360,125 @@ Etclface_receive(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 
 @*1Encode Commands.
 
+Erlang has several data types, while Tcl treats everything as character
+strings, although, for efficiency, Tcl can internally maintain numeric
+data as numbers. The encode commands will convert from Tcl data types
+to Erlang types ready for transmission to other Erlang nodes.
+
+\.{erl\_interface} provides two groups of encode functions, and within
+each group there is one function for each Erlang data type. For now,
+at least, a limited useful subset of these functions will be exposed as
+Tcl commands. Of the two groups, only those with the \.{ei\_x\_} prefix
+are implemented, and of these we shall start with a limited main group.
+
+The \.{ei\_x\_*} functions encode the data into the \.{ei\_x\_buff}
+data structure.
+
+@*2\.{etclface::xb\_new ?-withversion?}.
+
+Creates a new \.{ei\_x\_buff} structure and initializes the buffer
+using \.{ei\_x\_new()}, or optionally with an initial version byte using
+\.{ei\_x\_new\_with\_version()}.
+
 @<Encode commands@>=
 static int
-Etclface_encode(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+Etclface_xb_new(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 {
+	ei_x_buff *xb;
+
+	if ((objc!=1) && (objc!=2)) {
+		Tcl_WrongNumArgs(ti, 1, objv, "?-withversion");
+		return TCL_ERROR;
+	}
+	if ((objc==2) && strcmp(Tcl_GetString(objv[1]), "-withversion")) {
+		Tcl_SetResult(ti, "Only -withversion allowed as argument.", TCL_STATIC);
+		return TCL_ERROR;
+	}
+
+	xb = (ei_x_buff *)Tcl_AttemptAlloc(sizeof(ei_x_buff));
+	if (xb == NULL) {
+		Tcl_SetResult(ti, "Could not allocate memory for ei_x_buff", TCL_STATIC);
+		return TCL_ERROR;
+	}
+
+	int res;
+	if (objc==1) {
+		res = ei_x_new(xb);
+	} else {
+		res = ei_x_new_with_version(xb);
+	}
+	if (res < 0) {
+		Tcl_Free((char *)xb);
+		char errstr[100];
+		sprintf(errstr, "ei_x_new/ei_x_new_with_version failed (erl_errno=%d)", erl_errno);
+		Tcl_SetResult(ti, errstr, TCL_VOLATILE);
+		return TCL_ERROR;
+	}
+
+	char xbhandle[100];
+	sprintf(xbhandle, "xb%p", xb);
+	Tcl_SetResult(ti, xbhandle, TCL_VOLATILE);
+
 	return TCL_OK;
 }
+
+@*2\.{etclface::xb\_free xb}.
+
+Free up the internal buffer allocated to \.{xb} using \.{ei\_x\_free()},
+but does not free up \.{xb} itself.
+
+@<Encode commands@>=
+static int
+Etclface_xb_free(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+{
+	char *xbhandle;
+	ei_x_buff *xb;
+
+	if (objc!=2) {
+		Tcl_WrongNumArgs(ti, 1, objv, "xb");
+		return TCL_ERROR;
+	}
+
+	xbhandle = Tcl_GetString(objv[1]);
+	sscanf(xbhandle, "xb%p", &xb);
+
+	if (ei_x_free(xb) < 0) {
+		char errstr[100];
+		sprintf(errstr, "ei_x_free failed (erl_errno=%d)", erl_errno);
+		Tcl_SetResult(ti, errstr, TCL_VOLATILE);
+		return TCL_ERROR;
+	}
+
+	return TCL_OK;
+}
+
+@*2\.{etclface::xb\_show xb}.
+
+Show the contents of the \.{xb} structure. This is mainly for debugging,
+or for those who are curious about the workings of the encode/decode
+commands.
+
+@<Encode commands@>=
+static int
+Etclface_xb_show(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+{
+	char *xbhandle, result[100];
+	ei_x_buff *xb;
+
+	if (objc!=2) {
+		Tcl_WrongNumArgs(ti, 1, objv, "xb");
+		return TCL_ERROR;
+	}
+
+	xbhandle = Tcl_GetString(objv[1]);
+	sscanf(xbhandle, "xb%p", &xb);
+
+	sprintf(result, "buff %p buffsz %d index %d", xb->buff, xb->buffsz, xb->index);
+	Tcl_SetResult(ti, result, TCL_VOLATILE);
+
+	return TCL_OK;
+}
+
 
 @*1Decode Commands.
 
