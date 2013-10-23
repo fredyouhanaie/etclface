@@ -98,8 +98,10 @@ typedef struct EtclfaceCommand_s {
 @<Command declarations@>=
 static Tcl_ObjCmdProc Etclface_connect;
 static Tcl_ObjCmdProc Etclface_encode_atom;
+static Tcl_ObjCmdProc Etclface_encode_boolean;
 static Tcl_ObjCmdProc Etclface_encode_empty_list;
 static Tcl_ObjCmdProc Etclface_encode_list_header;
+static Tcl_ObjCmdProc Etclface_encode_tuple_header;
 static Tcl_ObjCmdProc Etclface_init;
 static Tcl_ObjCmdProc Etclface_nodename;
 static Tcl_ObjCmdProc Etclface_reg_send;
@@ -119,8 +121,10 @@ alphabetical order. The last element must be a \.{\{NULL,NULL\}}
 static EtclfaceCommand_t EtclfaceCommand[] = {@/
 	{"etclface::connect", Etclface_connect},@/
 	{"etclface::encode::atom", Etclface_encode_atom},@/
+	{"etclface::encode::boolean", Etclface_encode_boolean},@/
 	{"etclface::encode::empty_list", Etclface_encode_empty_list},@/
 	{"etclface::encode::list_header", Etclface_encode_list_header},@/
+	{"etclface::encode::tuple_header", Etclface_encode_tuple_header},@/
 	{"etclface::init", Etclface_init},@/
 	{"etclface::nodename", Etclface_nodename},@/
 	{"etclface::reg_send", Etclface_reg_send},@/
@@ -536,7 +540,7 @@ over time.
 
 @*2\.{etclface::encode::atom xb atom}.
 
-Takes and existing \.{ei\_x\_buff} and adds the string \.{atom} as an
+Takes an existing \.{ei\_x\_buff} and adds the string \.{atom} as an
 atom in binary format.
 
 @<Encode commands@>=
@@ -559,6 +563,41 @@ Etclface_encode_atom(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const obj
 	if (ei_x_encode_atom(xb, atom) < 0) {
 		char errstr[100];
 		sprintf(errstr, "ei_x_encode_atom failed (erl_errno=%d)", erl_errno);
+		Tcl_SetResult(ti, errstr, TCL_VOLATILE);
+	}
+
+	return TCL_OK;
+}
+
+@*2\.{etclface::encode::boolean xb boolean}.
+
+Takes an existing \.{ei\_x\_buff} and adds the boolean value to it.
+
+Note that in Tcl \.{1}, \.{true}, \.{on} and \.{yes} are classed as True,
+while \.{0}, \.{false}, \.{off} and \.{no} are classed as False.
+
+@<Encode commands@>=
+static int
+Etclface_encode_boolean(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+{
+	char *xbhandle;
+	int boolean;
+	ei_x_buff *xb;
+
+	if (objc!=3) {
+		Tcl_WrongNumArgs(ti, 1, objv, "xb boolean");
+		return TCL_ERROR;
+	}
+
+	xbhandle = Tcl_GetString(objv[1]);
+	sscanf(xbhandle, "xb%p", &xb);
+
+	if (Tcl_GetBooleanFromObj(ti, objv[2], &boolean) == TCL_ERROR)
+		return TCL_ERROR;
+
+	if (ei_x_encode_boolean(xb, boolean) < 0) {
+		char errstr[100];
+		sprintf(errstr, "ei_x_encode_boolean failed (erl_errno=%d)", erl_errno);
 		Tcl_SetResult(ti, errstr, TCL_VOLATILE);
 	}
 
@@ -626,6 +665,42 @@ Etclface_encode_empty_list(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *con
 
 	return TCL_OK;
 }
+
+@*2\.{etclface::encode::tuple\_header xb arity}.
+
+Initialize encoding of a tuple using \.{ei\_x\_encode\_tuple\_header()}.
+
+@<Encode commands@>=
+static int
+Etclface_encode_tuple_header(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+{
+	ei_x_buff *xb;
+	int arity;
+
+	if (objc!=3) {
+		Tcl_WrongNumArgs(ti, 1, objv, "xb arity");
+		return TCL_ERROR;
+	}
+
+	char *xbhandle = Tcl_GetString(objv[1]);
+	sscanf(xbhandle, "xb%p", &xb);
+
+	if (Tcl_GetInt(ti, Tcl_GetString(objv[2]), &arity) == TCL_ERROR)
+		return TCL_ERROR;
+	if (arity < 0) {
+		Tcl_SetResult(ti, "arity cannot be negative.", TCL_STATIC);
+		return TCL_ERROR;
+	}
+
+	if (ei_x_encode_tuple_header(xb, arity) < 0) {
+		char errstr[100];
+		sprintf(errstr, "ei_x_encode_tuple_header failed (erl_errno=%d)", erl_errno);
+		Tcl_SetResult(ti, errstr, TCL_VOLATILE);
+	}
+
+	return TCL_OK;
+}
+
 @*1Decode Commands.
 
 @<Decode commands@>=
