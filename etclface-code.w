@@ -44,6 +44,7 @@ The \etf commands are collected in a number of groups.
 @<Connection commands@>;
 @<Send commands@>;
 @<Receive commands@>;
+@<Buffer commands@>;
 @<Encode commands@>;
 @<Decode commands@>;
 @<Utility commands@>;
@@ -358,7 +359,7 @@ Etclface_receive(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 	return TCL_OK;
 }
 
-@*1Encode Commands.
+@*1Buffer Commands.
 
 Erlang has several data types, while Tcl treats everything as character
 strings, although, for efficiency, Tcl can internally maintain numeric
@@ -380,7 +381,7 @@ Creates a new \.{ei\_x\_buff} structure and initializes the buffer
 using \.{ei\_x\_new()}, or optionally with an initial version byte using
 \.{ei\_x\_new\_with\_version()}.
 
-@<Encode commands@>=
+@<Buffer commands@>=
 static int
 Etclface_xb_new(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 {
@@ -427,7 +428,7 @@ Etclface_xb_new(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 Free up the internal buffer allocated to \.{xb} using \.{ei\_x\_free()},
 but does not free up \.{xb} itself.
 
-@<Encode commands@>=
+@<Buffer commands@>=
 static int
 Etclface_xb_free(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 {
@@ -458,7 +459,12 @@ Show the contents of the \.{xb} structure. This is mainly for debugging,
 or for those who are curious about the workings of the encode/decode
 commands.
 
-@<Encode commands@>=
+The output will be in the form of \.{buff p buffsz d index d}, where \.{p}
+is a pointer and the \.{d}s are integers. This lends itself to being parsed as an array, e.g.
+\.{array set [etclface::xb\_show \$xb]}
+
+
+@<Buffer commands@>=
 static int
 Etclface_xb_show(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 {
@@ -479,6 +485,14 @@ Etclface_xb_show(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 	return TCL_OK;
 }
 
+@*1Encode Commands.
+
+@<Encode commands@>=
+static int
+Etclface_encode(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+{
+	return TCL_OK;
+}
 
 @*1Decode Commands.
 
