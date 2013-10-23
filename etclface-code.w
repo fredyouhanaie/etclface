@@ -39,6 +39,7 @@ The \etf commands are collected in a number of groups.
 #include <erl_interface.h>
 #include <ei.h>
 
+@<Command declarations@>;
 @<Internal helper functions@>;
 @<Initialization commands@>;
 @<Connection commands@>;
@@ -71,21 +72,62 @@ Etclface_Init(Tcl_Interp *ti)
 		return TCL_ERROR;
 	}
 
-	Tcl_CreateObjCommand(ti, "etclface::init", (Tcl_ObjCmdProc *) Etclface_init, NULL, NULL);
-	Tcl_CreateObjCommand(ti, "etclface::xinit", (Tcl_ObjCmdProc *) Etclface_xinit, NULL, NULL);
-	Tcl_CreateObjCommand(ti, "etclface::connect", (Tcl_ObjCmdProc *) Etclface_connect, NULL, NULL);
-	Tcl_CreateObjCommand(ti, "etclface::xconnect", (Tcl_ObjCmdProc *) Etclface_xconnect, NULL, NULL);
-	Tcl_CreateObjCommand(ti, "etclface::reg_send", (Tcl_ObjCmdProc *) Etclface_reg_send, NULL, NULL);
-	Tcl_CreateObjCommand(ti, "etclface::xb_new", (Tcl_ObjCmdProc *) Etclface_xb_new, NULL, NULL);
-	Tcl_CreateObjCommand(ti, "etclface::xb_free", (Tcl_ObjCmdProc *) Etclface_xb_free, NULL, NULL);
-	Tcl_CreateObjCommand(ti, "etclface::xb_show", (Tcl_ObjCmdProc *) Etclface_xb_show, NULL, NULL);
-	Tcl_CreateObjCommand(ti, "etclface::self", (Tcl_ObjCmdProc *) Etclface_self, NULL, NULL);
-	Tcl_CreateObjCommand(ti, "etclface::nodename", (Tcl_ObjCmdProc *) Etclface_nodename, NULL, NULL);
-	Tcl_CreateObjCommand(ti, "etclface::tracelevel", (Tcl_ObjCmdProc *) Etclface_tracelevel, NULL, NULL);
+	EtclfaceCommand_t *etfcmd = EtclfaceCommand;
+	while (etfcmd->proc != NULL) {
+		Tcl_CreateObjCommand(ti, etfcmd->name, etfcmd->proc, NULL, NULL);
+		etfcmd++;
+	}
 
 	return TCL_OK;
-@#
 }
+
+@*1The Commands.
+
+All the Tcl commands and their associated functions are defined in the
+|EtclfaceCommand| array, which is then added to Tcl in the |Etclface_Init|
+function.
+
+@<Command declarations@>=
+typedef struct EtclfaceCommand_s {
+	char		*name;
+	Tcl_ObjCmdProc	*proc;
+} EtclfaceCommand_t;
+
+@ We need to forward declare the functions first, in alphabetical order.
+
+@<Command declarations@>=
+static Tcl_ObjCmdProc Etclface_connect;
+static Tcl_ObjCmdProc Etclface_init;
+static Tcl_ObjCmdProc Etclface_nodename;
+static Tcl_ObjCmdProc Etclface_reg_send;
+static Tcl_ObjCmdProc Etclface_self;
+static Tcl_ObjCmdProc Etclface_tracelevel;
+static Tcl_ObjCmdProc Etclface_xb_free;
+static Tcl_ObjCmdProc Etclface_xb_new;
+static Tcl_ObjCmdProc Etclface_xb_show;
+static Tcl_ObjCmdProc Etclface_xconnect;
+static Tcl_ObjCmdProc Etclface_xinit;
+
+
+@ These are the command names and their associated functions, in
+alphabetical order. The last element must be a \.{\{NULL,NULL\}}
+
+@<Command declarations@>=
+static EtclfaceCommand_t EtclfaceCommand[] = {@/
+	{"etclface::connect", Etclface_connect},@/
+	{"etclface::init", Etclface_init},@/
+	{"etclface::nodename", Etclface_nodename},@/
+	{"etclface::reg_send", Etclface_reg_send},@/
+	{"etclface::self", Etclface_self},@/
+	{"etclface::tracelevel", Etclface_tracelevel},@/
+	{"etclface::xb_free", Etclface_xb_free},@/
+	{"etclface::xb_new", Etclface_xb_new},@/
+	{"etclface::xb_show", Etclface_xb_show},@/
+	{"etclface::xconnect", Etclface_xconnect},@/
+	{"etclface::xinit", Etclface_xinit},@/
+	{NULL, NULL}	/* marks the end of the list*/
+};
+
 
 @*1Initialization Commands.
 
