@@ -97,6 +97,9 @@ typedef struct EtclfaceCommand_s {
 
 @<Command declarations@>=
 static Tcl_ObjCmdProc Etclface_connect;
+static Tcl_ObjCmdProc Etclface_encode_atom;
+static Tcl_ObjCmdProc Etclface_encode_empty_list;
+static Tcl_ObjCmdProc Etclface_encode_list_header;
 static Tcl_ObjCmdProc Etclface_init;
 static Tcl_ObjCmdProc Etclface_nodename;
 static Tcl_ObjCmdProc Etclface_reg_send;
@@ -115,6 +118,9 @@ alphabetical order. The last element must be a \.{\{NULL,NULL\}}
 @<Command declarations@>=
 static EtclfaceCommand_t EtclfaceCommand[] = {@/
 	{"etclface::connect", Etclface_connect},@/
+	{"etclface::encode::atom", Etclface_encode_atom},@/
+	{"etclface::encode::empty_list", Etclface_encode_empty_list},@/
+	{"etclface::encode::list_header", Etclface_encode_list_header},@/
 	{"etclface::init", Etclface_init},@/
 	{"etclface::nodename", Etclface_nodename},@/
 	{"etclface::reg_send", Etclface_reg_send},@/
@@ -180,7 +186,6 @@ Etclface_init(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 	sprintf(echandle, "ec%p", ec);
 	Tcl_SetResult(ti, echandle, TCL_VOLATILE);
 	return TCL_OK;
-@#
 }
 
 @*2\.{etclface::xinit host alive node ipaddr ?cookie?}.
@@ -227,7 +232,6 @@ Etclface_xinit(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 	sprintf(echandle, "ec%p", ec);
 	Tcl_SetResult(ti, echandle, TCL_VOLATILE);
 	return TCL_OK;
-@#
 }
 
 @*1Connection Commands.
@@ -292,7 +296,6 @@ Etclface_connect(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 	Tcl_SetResult(ti, fdstr, TCL_VOLATILE);
 
 	return TCL_OK;
-@#
 }
 
 @*2\.{etclface::xconnect ec ipaddr alivename ?timeout?}.
@@ -347,7 +350,7 @@ Etclface_xconnect(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[]
 
 @*1Send Commands.
 
-@*2\.{reg\_send ec fd server term ?term...?}.
+@*2\.{reg\_send ec fd server xb}.
 
 Send a message consisting of one or more \.{term}s to a registered process
 \.{server}, using the \.{ec} handle otained from \.{etclface::init}
@@ -357,8 +360,8 @@ and \.{fd} obtained from \.{etclface::connect}.
 static int
 Etclface_reg_send(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 {
-	if (objc < 5) {
-		Tcl_WrongNumArgs(ti, 1, objv, "ec fd server term ?term...?");
+	if (objc != 5) {
+		Tcl_WrongNumArgs(ti, 1, objv, "ec fd server xb");
 		return TCL_ERROR;
 	}
 
@@ -375,20 +378,18 @@ Etclface_reg_send(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[]
 	char *serverport;
 	serverport = Tcl_GetString(objv[3]);
 
-	char *term;
-	term = Tcl_GetString(objv[4]);
+	char *xbhandle;
+	ei_x_buff	*xb;
+	xbhandle = Tcl_GetString(objv[4]);
+	sscanf(xbhandle, "xb%p", &xb);
 
-	ei_x_buff x;
-	ei_x_new(&x);
-	ei_x_format(&x, "~a", term);
-	if (ei_reg_send(ec, fd, serverport, x.buff, x.index) != 0) {
-		ei_x_free(&x);
+	if (ei_reg_send(ec, fd, serverport, xb->buff, xb->index) != 0) {
 		char errstr[100];
-		sprintf(errstr, "ei_reg_send: [%d] %s", erl_errno, strerror(erl_errno));
+		sprintf(errstr, "ei_reg_send failed (%d)", erl_errno);
 		Tcl_SetResult(ti, errstr, TCL_VOLATILE);
 		return TCL_ERROR;
 	}
-	ei_x_free(&x);
+
 	return TCL_OK;
 }
 
@@ -529,13 +530,102 @@ Etclface_xb_show(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 
 @*1Encode Commands.
 
+\.{erl\_interface} provides many encode functions, we shall start with
+the most commonly used Erlang data types, then add more encode commands
+over time.
+
+@*2\.{etclface::encode::atom xb atom}.
+
+Takes and existing \.{ei\_x\_buff} and adds the string \.{atom} as an
+atom in binary format.
+
 @<Encode commands@>=
 static int
-Etclface_encode(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+Etclface_encode_atom(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 {
+	char		*xbhandle, *atom;
+	ei_x_buff	*xb;
+
+	if (objc!=3) {
+		Tcl_WrongNumArgs(ti, 1, objv, "xb atom");
+		return TCL_ERROR;
+	}
+
+	xbhandle = Tcl_GetString(objv[1]);
+	sscanf(xbhandle, "xb%p", &xb);
+
+	atom = Tcl_GetString(objv[2]);
+
+	if (ei_x_encode_atom(xb, atom) < 0) {
+		char errstr[100];
+		sprintf(errstr, "ei_x_encode_atom failed (erl_errno=%d)", erl_errno);
+		Tcl_SetResult(ti, errstr, TCL_VOLATILE);
+	}
+
 	return TCL_OK;
 }
 
+@*2\.{etclface::encode::list\_header xb arity}.
+
+Initialize encoding of a list using \.{ei\_x\_encode\_list\_header()}.
+
+@<Encode commands@>=
+static int
+Etclface_encode_list_header(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+{
+	ei_x_buff *xb;
+	int arity;
+
+	if (objc!=3) {
+		Tcl_WrongNumArgs(ti, 1, objv, "xb arity");
+		return TCL_ERROR;
+	}
+
+	char *xbhandle = Tcl_GetString(objv[1]);
+	sscanf(xbhandle, "xb%p", &xb);
+
+	if (Tcl_GetInt(ti, Tcl_GetString(objv[2]), &arity) == TCL_ERROR)
+		return TCL_ERROR;
+	if (arity < 0) {
+		Tcl_SetResult(ti, "arity cannot be negative.", TCL_STATIC);
+		return TCL_ERROR;
+	}
+
+	if (ei_x_encode_list_header(xb, arity) < 0) {
+		char errstr[100];
+		sprintf(errstr, "ei_x_encode_list_header failed (erl_errno=%d)", erl_errno);
+		Tcl_SetResult(ti, errstr, TCL_VOLATILE);
+	}
+
+	return TCL_OK;
+}
+
+@*2\.{etclface::encode::empty\_list xb}.
+
+Terminate the encoding of a list using \.{ei\_x\_encode\_empty\_list}.
+
+@<Encode commands@>=
+static int
+Etclface_encode_empty_list(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+{
+	ei_x_buff *xb;
+
+	if (objc!=2) {
+		Tcl_WrongNumArgs(ti, 1, objv, "xb");
+		return TCL_ERROR;
+	}
+
+	char *xbhandle = Tcl_GetString(objv[1]);
+	sscanf(xbhandle, "xb%p", &xb);
+
+	if (ei_x_encode_empty_list(xb) < 0) {
+		char errstr[100];
+		sprintf(errstr, "ei_x_encode_empty_list failed (erl_errno=%d)", erl_errno);
+		Tcl_SetResult(ti, errstr, TCL_VOLATILE);
+	}
+
+	return TCL_OK;
+}
 @*1Decode Commands.
 
 @<Decode commands@>=
