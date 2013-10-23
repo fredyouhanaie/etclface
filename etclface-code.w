@@ -35,6 +35,7 @@ The \etf commands are collected in a number of groups.
 
 @c
 
+#include <string.h>
 #include <tcl.h>
 #include <erl_interface.h>
 #include <ei.h>
@@ -99,8 +100,13 @@ typedef struct EtclfaceCommand_s {
 static Tcl_ObjCmdProc Etclface_connect;
 static Tcl_ObjCmdProc Etclface_encode_atom;
 static Tcl_ObjCmdProc Etclface_encode_boolean;
+static Tcl_ObjCmdProc Etclface_encode_char;
+static Tcl_ObjCmdProc Etclface_encode_double;
 static Tcl_ObjCmdProc Etclface_encode_empty_list;
 static Tcl_ObjCmdProc Etclface_encode_list_header;
+static Tcl_ObjCmdProc Etclface_encode_long;
+static Tcl_ObjCmdProc Etclface_encode_pid;
+static Tcl_ObjCmdProc Etclface_encode_string;
 static Tcl_ObjCmdProc Etclface_encode_tuple_header;
 static Tcl_ObjCmdProc Etclface_init;
 static Tcl_ObjCmdProc Etclface_nodename;
@@ -122,8 +128,13 @@ static EtclfaceCommand_t EtclfaceCommand[] = {@/
 	{"etclface::connect", Etclface_connect},@/
 	{"etclface::encode::atom", Etclface_encode_atom},@/
 	{"etclface::encode::boolean", Etclface_encode_boolean},@/
+	{"etclface::encode::char", Etclface_encode_char},@/
+	{"etclface::encode::double", Etclface_encode_double},@/
 	{"etclface::encode::empty_list", Etclface_encode_empty_list},@/
 	{"etclface::encode::list_header", Etclface_encode_list_header},@/
+	{"etclface::encode::long", Etclface_encode_long},@/
+	{"etclface::encode::pid", Etclface_encode_pid},@/
+	{"etclface::encode::string", Etclface_encode_string},@/
 	{"etclface::encode::tuple_header", Etclface_encode_tuple_header},@/
 	{"etclface::init", Etclface_init},@/
 	{"etclface::nodename", Etclface_nodename},@/
@@ -135,6 +146,7 @@ static EtclfaceCommand_t EtclfaceCommand[] = {@/
 	{"etclface::xb_show", Etclface_xb_show},@/
 	{"etclface::xconnect", Etclface_xconnect},@/
 	{"etclface::xinit", Etclface_xinit},@/
+
 	{NULL, NULL}	/* marks the end of the list*/
 };
 
@@ -604,6 +616,134 @@ Etclface_encode_boolean(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const 
 	return TCL_OK;
 }
 
+@*2\.{etclface::encode::char xb char}.
+
+Takes an existing \.{ei\_x\_buff} and adds the char value to it.
+
+@<Encode commands@>=
+static int
+Etclface_encode_char(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+{
+	const char *xbhandle, *chstr;
+	ei_x_buff *xb;
+
+	if (objc!=3) {
+		Tcl_WrongNumArgs(ti, 1, objv, "xb char");
+		return TCL_ERROR;
+	}
+
+	xbhandle = Tcl_GetString(objv[1]);
+	sscanf(xbhandle, "xb%p", &xb);
+
+	chstr = Tcl_GetString(objv[2]);
+	if (strlen(chstr) != 1) {
+		Tcl_SetResult(ti, "char must be a single character.", TCL_STATIC);
+		return TCL_ERROR;
+	}
+
+	if (ei_x_encode_char(xb, chstr[0]) < 0) {
+		char errstr[100];
+		sprintf(errstr, "ei_x_encode_char failed (erl_errno=%d)", erl_errno);
+		Tcl_SetResult(ti, errstr, TCL_VOLATILE);
+	}
+
+	return TCL_OK;
+}
+
+@*2\.{etclface::encode::double xb double}.
+
+Takes an existing \.{ei\_x\_buff} and adds the double value to it.
+
+@<Encode commands@>=
+static int
+Etclface_encode_double(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+{
+	const char *xbhandle;
+	double dbl;
+	ei_x_buff *xb;
+
+	if (objc!=3) {
+		Tcl_WrongNumArgs(ti, 1, objv, "xb double");
+		return TCL_ERROR;
+	}
+
+	xbhandle = Tcl_GetString(objv[1]);
+	sscanf(xbhandle, "xb%p", &xb);
+
+	if (Tcl_GetDoubleFromObj(ti, objv[2], &dbl) == TCL_ERROR)
+		return TCL_ERROR;
+
+	if (ei_x_encode_double(xb, dbl) < 0) {
+		char errstr[100];
+		sprintf(errstr, "ei_x_encode_double failed (erl_errno=%d)", erl_errno);
+		Tcl_SetResult(ti, errstr, TCL_VOLATILE);
+	}
+
+	return TCL_OK;
+}
+
+@*2\.{etclface::encode::long xb long}.
+
+Takes an existing \.{ei\_x\_buff} and adds the long value to it.
+
+@<Encode commands@>=
+static int
+Etclface_encode_long(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+{
+	const char *xbhandle;
+	long lng;
+	ei_x_buff *xb;
+
+	if (objc!=3) {
+		Tcl_WrongNumArgs(ti, 1, objv, "xb long");
+		return TCL_ERROR;
+	}
+
+	xbhandle = Tcl_GetString(objv[1]);
+	sscanf(xbhandle, "xb%p", &xb);
+
+	if (Tcl_GetLongFromObj(ti, objv[2], &lng) == TCL_ERROR)
+		return TCL_ERROR;
+
+	if (ei_x_encode_long(xb, lng) < 0) {
+		char errstr[100];
+		sprintf(errstr, "ei_x_encode_long failed (erl_errno=%d)", erl_errno);
+		Tcl_SetResult(ti, errstr, TCL_VOLATILE);
+	}
+
+	return TCL_OK;
+}
+
+@*2\.{etclface::encode::string xb string}.
+
+Takes an existing \.{ei\_x\_buff} and adds the string to it.
+
+@<Encode commands@>=
+static int
+Etclface_encode_string(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+{
+	const char *xbhandle, *str;
+	ei_x_buff *xb;
+
+	if (objc!=3) {
+		Tcl_WrongNumArgs(ti, 1, objv, "xb string");
+		return TCL_ERROR;
+	}
+
+	xbhandle = Tcl_GetString(objv[1]);
+	sscanf(xbhandle, "xb%p", &xb);
+
+	str = Tcl_GetString(objv[2]);
+
+	if (ei_x_encode_string(xb, str) < 0) {
+		char errstr[100];
+		sprintf(errstr, "ei_x_encode_string failed (erl_errno=%d)", erl_errno);
+		Tcl_SetResult(ti, errstr, TCL_VOLATILE);
+	}
+
+	return TCL_OK;
+}
+
 @*2\.{etclface::encode::list\_header xb arity}.
 
 Initialize encoding of a list using \.{ei\_x\_encode\_list\_header()}.
@@ -701,6 +841,41 @@ Etclface_encode_tuple_header(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *c
 	return TCL_OK;
 }
 
+@*2\.{etclface::encode::pid xb pid}.
+
+Encode an \.{Erlang\_Pid} in the \.{ei\_x\_buff} structure. If the
+supplied \.{pid} is the literal \.{self}, then this processes own pid
+will be encoded.
+
+@<Encode commands@>=
+static int
+Etclface_encode_pid(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+{
+	const char *xbhandle, *pidhandle;
+	ei_x_buff  *xb;
+	erlang_pid *pid;
+
+	if (objc!=3) {
+		Tcl_WrongNumArgs(ti, 1, objv, "xb pid");
+		return TCL_ERROR;
+	}
+
+	xbhandle = Tcl_GetString(objv[1]);
+	sscanf(xbhandle, "xb%p", &xb);
+
+	pidhandle = Tcl_GetString(objv[2]);
+	sscanf(pidhandle, "pid%p", &pid);
+
+	if (ei_x_encode_pid(xb, pid) < 0) {
+		char errstr[100];
+		sprintf(errstr, "ei_x_encode_pid failed (erl_errno=%d)", erl_errno);
+		Tcl_SetResult(ti, errstr, TCL_VOLATILE);
+	}
+
+	return TCL_OK;
+}
+
+
 @*1Decode Commands.
 
 @<Decode commands@>=
@@ -715,7 +890,9 @@ These are various commands for accessing the \.{ei\_cnode} data structures.
 
 @*2\.{etclface::self ec}.
 
-Return the "pseudo" pid of this process
+Return the pid handle for the given \.{ei\_cnode}. The handle will
+be of the form \.{pid0x123456}, which can be used in subsequent
+\.{etclface::encode:pid} commands.
 
 @<Utility commands@>=
 static int
@@ -734,10 +911,10 @@ Etclface_self(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 	erlang_pid *self;
 	self = ei_self(ec);
 
-	char pidstr[100];
-	sprintf(pidstr, "<%d.%d.%d>", self->num, self->serial, self->creation);
+	char pidhandle[100];
+	sprintf(pidhandle, "pid%p", self);
 
-	Tcl_SetResult(ti, pidstr, TCL_VOLATILE);
+	Tcl_SetResult(ti, pidhandle, TCL_VOLATILE);
 	return TCL_OK;
 }
 
