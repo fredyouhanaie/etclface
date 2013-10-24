@@ -72,27 +72,30 @@
 \count255=1
 
 \def\etf{\.{etclface}\,}
+\def\erliface{\.{erl\_interface}\,}
 
 %% To a C programmer NULL is more familiar than Lambda.
 @s NULL normal
 
-%% Treat the Tcl data types as reserved words during typesetting.
+%% Treat the various data types as reserved words when typesetting.
+
 @s ClientData int
 @s Tcl_Obj int
 @s Tcl_Interp int
 @s Tcl_ObjCmdProc int
 
-%% Treat the erl_interface data types as reserved words during typesetting.
 @s ei_cnode int
 @s ei_x_buff int
 @s erlang_pid int
 @s Erl_IpAddr int
 
+@s EtclfaceCommand_s int
+@s EtclfaceCommand_t int
+
 @*Introduction.
 
-\etf is a Tcl/Tk extension that exposes a minimal set of
-\.{erl\_interface} functions. \.{erl\_interface} is part of the core
-Erlang/OTP distribution.
+\etf is a Tcl/Tk extension that exposes a minimal set of \erliface
+functions. \erliface is part of the core Erlang/OTP distribution.
 
 Just like Erlang, Tcl/Tk is a mature dynamic scripting language.
 In fact both languages started over 25 years ago in the mid-eighties.
@@ -112,7 +115,7 @@ provided by Erlang/OTP.
 
 @*Implementation Notes.
 
-There are two sets of communication modules within \.{erl\_interface}, the
+There are two sets of communication modules within \erliface, the
 old \.{erl\_*} ones and the newer \.{ei\_*} set. For \etf we are using the
 latter.
 

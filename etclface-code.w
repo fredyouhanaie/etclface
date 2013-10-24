@@ -69,7 +69,7 @@ Etclface_Init(Tcl_Interp *ti)
 		return TCL_ERROR;
 	}
 
-	if (Tcl_PkgProvide(ti, "Etclface", "0.1") != TCL_OK) {
+	if (Tcl_PkgProvide(ti, "etclface", "0.1") != TCL_OK) {
 		return TCL_ERROR;
 	}
 
@@ -153,7 +153,7 @@ static EtclfaceCommand_t EtclfaceCommand[] = {@/
 
 @*1Initialization Commands.
 
-\.{erl\_interface} provides two functions for initializing
+\erliface provides two functions for initializing
 the local \.{cnode} data structures, \.{ei\_connect\_init()} and
 \.{ei\_connect\_xinit()}. Although it is possible to use a single command
 with two distinct calling sequences, at least for now, we will stay with
@@ -180,7 +180,7 @@ Etclface_init(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 	ei_cnode	*ec;
 	char		echandle[100];
 
-	if ((objc<2) || (objc>3)) {
+	if ((objc!=2) && (objc!=3)) {
 		Tcl_WrongNumArgs(ti, 1, objv, "nodename ?cookie?");
 		return TCL_ERROR;
 	}
@@ -218,7 +218,7 @@ Etclface_xinit(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 	ei_cnode	*ec;
 	char		echandle[100];
 
-	if ((objc<5) || (objc>6)) {
+	if ((objc!=5) && (objc!=6)) {
 		Tcl_WrongNumArgs(ti, 1, objv, "host alive node ipaddr ?cookie?");
 		return TCL_ERROR;
 	}
@@ -252,7 +252,7 @@ Etclface_xinit(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 
 @*1Connection Commands.
 
-\.{erl\_interface} provides four functions for establishing a connection
+\erliface provides four functions for establishing a connection
 to another node. Two, \.{ei\_connect()} and \.{ei\_connect\_tmo()},
 expect a single remote nodename in the form of \.{alivename@@hostname},
 while the other two, \.{ei\_xconnect()} and \.{ei\_xconnect\_tmo()},
@@ -282,7 +282,7 @@ Etclface_connect(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 	char *nodename;
 	unsigned timeout;
 
-	if ((objc<3) || (objc>4)) {
+	if ((objc!=3) && (objc!=4)) {
 		Tcl_WrongNumArgs(ti, 1, objv, "ec nodename ?timeout?");
 		return TCL_ERROR;
 	}
@@ -302,7 +302,7 @@ Etclface_connect(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 	int fd;
 	if ((fd = ei_connect_tmo(ec, nodename, timeout)) < 0) {
 		char errstr[100];
-		sprintf(errstr, "ei_connect failed (fd=%d, erl_errno=%d)", fd, erl_errno);
+		sprintf(errstr, "ei_connect failed (erl_errno=%d)", fd, erl_errno);
 		Tcl_SetResult(ti, errstr, TCL_VOLATILE);
 		return TCL_ERROR;
 	}
@@ -330,7 +330,7 @@ Etclface_xconnect(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[]
 	int		fd;
 	char		fdstr[100];
 
-	if ((objc<4) || (objc>5)) {
+	if ((objc!=4) && (objc!=5)) {
 		Tcl_WrongNumArgs(ti, 1, objv, "ec ipaddr alivename ?timeout?");
 		return TCL_ERROR;
 	}
@@ -352,7 +352,7 @@ Etclface_xconnect(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[]
 
 	if ((fd = ei_xconnect_tmo(ec, ipaddr, alivename, timeout)) < 0) {
 		char errstr[100];
-		sprintf(errstr, "ei_connect failed (fd=%d, erl_errno=%d)", fd, erl_errno);
+		sprintf(errstr, "ei_connect failed (erl_errno=%d)", fd, erl_errno);
 		Tcl_SetResult(ti, errstr, TCL_VOLATILE);
 		return TCL_ERROR;
 	}
@@ -368,9 +368,10 @@ Etclface_xconnect(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[]
 
 @*2\.{reg\_send ec fd server xb}.
 
-Send a message consisting of one or more \.{term}s to a registered process
-\.{server}, using the \.{ec} handle otained from \.{etclface::init}
-and \.{fd} obtained from \.{etclface::connect}.
+Send a message consisting of an Erlang term stored in \.{xb} to a
+registered process \.{server}, using the \.{ec} handle otained from
+\.{etclface::init} or \.{etclface::xinit}, and \.{fd} obtained from
+\.{etclface::connect}.
 
 @<Send commands@>=
 static int
@@ -425,14 +426,14 @@ strings, although, for efficiency, Tcl can internally maintain numeric
 data as numbers. The encode commands will convert from Tcl data types
 to Erlang types ready for transmission to other Erlang nodes.
 
-\.{erl\_interface} provides two groups of encode functions, and within
+\erliface provides two groups of encode functions, and within
 each group there is one function for each Erlang data type. For now,
 at least, a limited useful subset of these functions will be exposed as
 Tcl commands. Of the two groups, only those with the \.{ei\_x\_} prefix
 are implemented, and of these we shall start with a limited main group.
 
-The \.{ei\_x\_*} functions encode the data into the \.{ei\_x\_buff}
-data structure.
+The \.{ei\_x\_encode\_*} functions encode the data into the
+\.{ei\_x\_buff} data structure.
 
 @*2\.{etclface::xb\_new ?-withversion?}.
 
@@ -461,12 +462,7 @@ Etclface_xb_new(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 		return TCL_ERROR;
 	}
 
-	int res;
-	if (objc==1) {
-		res = ei_x_new(xb);
-	} else {
-		res = ei_x_new_with_version(xb);
-	}
+	int res = (objc == 1) ? ei_x_new(xb) : ei_x_new_with_version(xb);
 	if (res < 0) {
 		Tcl_Free((char *)xb);
 		char errstr[100];
@@ -546,7 +542,7 @@ Etclface_xb_show(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 
 @*1Encode Commands.
 
-\.{erl\_interface} provides many encode functions, we shall start with
+\erliface provides many encode functions, we shall start with
 the most commonly used Erlang data types, then add more encode commands
 over time.
 
@@ -892,7 +888,7 @@ These are various commands for accessing the \.{ei\_cnode} data structures.
 
 Return the pid handle for the given \.{ei\_cnode}. The handle will
 be of the form \.{pid0x123456}, which can be used in subsequent
-\.{etclface::encode:pid} commands.
+\.{etclface::encode:pid} commands, and any that accept a pid.
 
 @<Utility commands@>=
 static int
