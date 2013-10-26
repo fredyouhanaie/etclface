@@ -36,6 +36,10 @@ array set all_tests {
 	connect_2	{etclface::connect with no timeout}
 	connect_3	{etclface::connect with timeout}
 	connect_4	{etclface::connect with bad argument}
+	xconnect_1	{etclface::xconnect with no arguments}
+	xconnect_2	{etclface::xconnect with no timeout}
+	xconnect_3	{etclface::xconnect with timeout}
+	xconnect_4	{etclface::xconnect with bad argument}
 }
 
 if {$argc == 0} {
