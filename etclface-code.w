@@ -98,6 +98,7 @@ typedef struct EtclfaceCommand_s {
 
 @<Command declarations@>=
 static Tcl_ObjCmdProc Etclface_connect;
+static Tcl_ObjCmdProc Etclface_disconnect;
 static Tcl_ObjCmdProc Etclface_encode_atom;
 static Tcl_ObjCmdProc Etclface_encode_boolean;
 static Tcl_ObjCmdProc Etclface_encode_char;
@@ -126,6 +127,7 @@ alphabetical order. The last element must be a \.{\{NULL,NULL\}}
 @<Command declarations@>=
 static EtclfaceCommand_t EtclfaceCommand[] = {@/
 	{"etclface::connect", Etclface_connect},@/
+	{"etclface::disconnect", Etclface_disconnect},@/
 	{"etclface::encode::atom", Etclface_encode_atom},@/
 	{"etclface::encode::boolean", Etclface_encode_boolean},@/
 	{"etclface::encode::char", Etclface_encode_char},@/
@@ -302,7 +304,7 @@ Etclface_connect(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 	int fd;
 	if ((fd = ei_connect_tmo(ec, nodename, timeout)) < 0) {
 		char errstr[100];
-		sprintf(errstr, "ei_connect failed (erl_errno=%d)", fd, erl_errno);
+		sprintf(errstr, "ei_connect failed (erl_errno=%d)", erl_errno);
 		Tcl_SetResult(ti, errstr, TCL_VOLATILE);
 		return TCL_ERROR;
 	}
@@ -352,7 +354,7 @@ Etclface_xconnect(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[]
 
 	if ((fd = ei_xconnect_tmo(ec, ipaddr, alivename, timeout)) < 0) {
 		char errstr[100];
-		sprintf(errstr, "ei_connect failed (erl_errno=%d)", fd, erl_errno);
+		sprintf(errstr, "ei_xconnect failed (erl_errno=%d)", erl_errno);
 		Tcl_SetResult(ti, errstr, TCL_VOLATILE);
 		return TCL_ERROR;
 	}
@@ -363,6 +365,32 @@ Etclface_xconnect(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[]
 	return TCL_OK;
 }
 
+@*2\.{etclface::disconnect fd}.
+
+Closes the socket connection with \.{fd} file descriptor.
+
+@<Connection commands@>=
+static int
+Etclface_disconnect(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+{
+	int fd;
+
+	if (objc != 2) {
+		Tcl_WrongNumArgs(ti, 1, objv, "fd");
+		return TCL_ERROR;
+	}
+
+	if (Tcl_GetIntFromObj(ti, objv[1], &fd) == TCL_ERROR) return TCL_ERROR;
+
+	if (close(fd) < 0) {
+		char errstr[100];
+		sprintf(errstr, "close failed (errno=%d)", errno);
+		Tcl_SetResult(ti, errstr, TCL_VOLATILE);
+		return TCL_ERROR;
+	}
+
+	return TCL_OK;
+}
 
 @*1Send Commands.
 
