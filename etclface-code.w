@@ -99,6 +99,7 @@ typedef struct EtclfaceCommand_s {
 @<Command declarations@>=
 static Tcl_ObjCmdProc Etclface_connect;
 static Tcl_ObjCmdProc Etclface_disconnect;
+static Tcl_ObjCmdProc Etclface_ec_free;
 static Tcl_ObjCmdProc Etclface_encode_atom;
 static Tcl_ObjCmdProc Etclface_encode_boolean;
 static Tcl_ObjCmdProc Etclface_encode_char;
@@ -128,6 +129,7 @@ alphabetical order. The last element must be a \.{\{NULL,NULL\}}
 static EtclfaceCommand_t EtclfaceCommand[] = {@/
 	{"etclface::connect", Etclface_connect},@/
 	{"etclface::disconnect", Etclface_disconnect},@/
+	{"etclface::ec_free", Etclface_ec_free},@/
 	{"etclface::encode::atom", Etclface_encode_atom},@/
 	{"etclface::encode::boolean", Etclface_encode_boolean},@/
 	{"etclface::encode::char", Etclface_encode_char},@/
@@ -508,8 +510,8 @@ Etclface_xb_new(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 
 @*2\.{etclface::xb\_free xb}.
 
-Free up the internal buffer allocated to \.{xb} using \.{ei\_x\_free()},
-but does not free up \.{xb} itself.
+Free up memory taken up by \.{xb} as well as the internal buffer allocated
+to \.{xb}.
 
 @<Buffer commands@>=
 static int
@@ -532,6 +534,8 @@ Etclface_xb_free(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 		Tcl_SetResult(ti, errstr, TCL_VOLATILE);
 		return TCL_ERROR;
 	}
+
+	Tcl_Free((char *)xb);
 
 	return TCL_OK;
 }
@@ -997,6 +1001,39 @@ Etclface_tracelevel(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv
 	if (Tcl_GetInt(ti, Tcl_GetString(objv[1]), &level) == TCL_ERROR)
 		return TCL_ERROR;
 	ei_set_tracelevel(level);
+
+	return TCL_OK;
+}
+
+@*2\.{etclface::ec\_free ec}.
+
+Free the memory taken up by an \.{ei\_cnode} handle that has been created
+with \.{etclface::init} or \.{xinit}.
+
+Currently there is no check for the validity of the pointer! In the
+near future the creation and deletion of such handles will be tracked
+internally. We rely on the programmer to, for example, not free the same
+handle twice!
+
+@<Utility commands@>=
+static int
+Etclface_ec_free(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+{
+	ei_cnode *ec;
+
+	if (objc != 2) {
+		Tcl_WrongNumArgs(ti, 1, objv, "ec");
+		return TCL_ERROR;
+	}
+
+	const char *echandle = Tcl_GetString(objv[1]);
+
+	if (sscanf(echandle, "ec%p", &ec) != 1) {
+		Tcl_SetResult(ti, "Invalid ec handle", TCL_STATIC);
+		return TCL_ERROR;
+	}
+
+	Tcl_Free((char *)ec);
 
 	return TCL_OK;
 }

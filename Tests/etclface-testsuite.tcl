@@ -42,7 +42,10 @@ proc init_2 {} {
 	if [catch { set ec [etclface::init $::mynode] } result] {
 		return -code error $result
 	}
-	if [string match "ec0x*" $ec] { return }
+	if [string match "ec0x*" $ec] {
+		etclface::ec_free $ec
+		return
+	}
 	return -code error $result
 }
 
@@ -51,7 +54,10 @@ proc init_3 {} {
 	if [catch { set ec [etclface::init $::mynode $::cookie] } result] {
 		return -code error $result
 	}
-	if [string match "ec0x*" $ec] { return }
+	if [string match "ec0x*" $ec] {
+		etclface::ec_free $ec
+		return
+	}
 	return -code error $result
 }
 
@@ -69,7 +75,10 @@ proc xinit_2 {} {
 	if [catch { set ec [etclface::xinit $::myhost $::alivename $::nodename $::myipaddr] } result] {
 		return -code error $result
 	}
-	if [string match "ec0x*" $ec] { return }
+	if [string match "ec0x*" $ec] {
+		etclface::ec_free $ec
+		return
+	}
 	return -code error $result
 }
 
@@ -78,7 +87,10 @@ proc xinit_3 {} {
 	if [catch { set ec [etclface::xinit $::myhost $::alivename $::nodename $::myipaddr $::cookie] } result] {
 		return -code error $result
 	}
-	if [string match "ec0x*" $ec] { return }
+	if [string match "ec0x*" $ec] {
+		etclface::ec_free $ec
+		return
+	}
 	return -code error $result
 }
 
@@ -99,6 +111,7 @@ proc connect_2 {} {
 		return -code error $result
 	}
 	if [string is integer $fd] {
+		etclface::ec_free $ec
 		etclface::disconnect $fd
 		return
 	}
@@ -113,6 +126,7 @@ proc connect_3 {} {
 		return -code error $result
 	}
 	if [string is integer $fd] {
+		etclface::ec_free $ec
 		etclface::disconnect $fd
 		return
 	}
@@ -124,7 +138,10 @@ proc connect_4 {} {
 	if [catch {	set ec [etclface::init $::mynode $::cookie]
 			set fd [etclface::connect $ec $::remotenode not_a_timeout]
 			} result] {
-		if [string match {expected integer but got *} $result] { return }
+		if [string match {expected integer but got *} $result] {
+			if [string match {ec0x*} $ec] { etclface::ec_free $ec }
+			return
+		}
 		return -code error $result
 	}
 	return -code error "etclface::connect with invalid timeout succeeded"
