@@ -20,6 +20,7 @@ set remnode	erlnode
 set remhost	localhost
 set remnodename	"erlnode@localhost"
 set remipaddr	127.0.0.1
+set remserver	server1
 
 # The array all_tests will be populated with test name/description
 # entries below:
@@ -270,6 +271,31 @@ proc xbuff_7 {} {
 			} result] {
 		return -code error $result
 	}
+	return
+}
+
+array set all_tests {reg_send_1 {reg_send with wrong arguments}}
+proc reg_send_1 {} {
+	if [catch { etclface::reg_send } result] {
+		if [string match {wrong # args*} $result] { return }
+		return -code error $result
+	}
+	return -code error "etclface::reg_send with no argument succeeded!"
+}
+
+array set all_tests {reg_send_2 {reg_send with correct args}}
+proc reg_send_2 {} {
+	if [catch {	set ec [etclface::init $::mynode $::cookie]
+			set fd [etclface::connect $ec $::remnodename]
+			set xb [etclface::xb_new -withversion]
+			etclface::encode::string $xb "Hello, World!"
+			etclface::reg_send $ec $fd $::remserver $xb
+			} result] {
+		return -code error $result
+	}
+	etclface::ec_free $ec
+	etclface::disconnect $fd
+	etclface::xb_free $xb
 	return
 }
 
