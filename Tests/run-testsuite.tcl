@@ -25,23 +25,6 @@ proc runtest {tname tdesc} {
 	}
 }
 
-array set all_tests {
-	init_1		{etclface::init with no arguments}
-	init_2		{etclface::init with no cookie}
-	init_3		{etclface::init with cookie}
-	xinit_1		{etclface::xinit with no arguments}
-	xinit_2		{etclface::xinit with no cookie}
-	xinit_3		{etclface::xinit with cookie}
-	connect_1	{etclface::connect with no arguments}
-	connect_2	{etclface::connect with no timeout}
-	connect_3	{etclface::connect with timeout}
-	connect_4	{etclface::connect with bad argument}
-	xconnect_1	{etclface::xconnect with no arguments}
-	xconnect_2	{etclface::xconnect with no timeout}
-	xconnect_3	{etclface::xconnect with timeout}
-	xconnect_4	{etclface::xconnect with bad argument}
-}
-
 if {$argc == 0} {
 	set tests [lsort [array names all_tests]]
 } else {
