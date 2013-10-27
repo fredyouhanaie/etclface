@@ -526,7 +526,10 @@ Etclface_xb_free(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 	}
 
 	xbhandle = Tcl_GetString(objv[1]);
-	sscanf(xbhandle, "xb%p", &xb);
+	if (sscanf(xbhandle, "xb%p", &xb) != 1) {
+		Tcl_SetResult(ti, "Invalid xb handle", TCL_STATIC);
+		return TCL_ERROR;
+	}
 
 	if (ei_x_free(xb) < 0) {
 		char errstr[100];
@@ -564,7 +567,10 @@ Etclface_xb_show(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 	}
 
 	xbhandle = Tcl_GetString(objv[1]);
-	sscanf(xbhandle, "xb%p", &xb);
+	if (sscanf(xbhandle, "xb%p", &xb) != 1) {
+		Tcl_SetResult(ti, "Invalid xb handle", TCL_STATIC);
+		return  TCL_ERROR;
+	}
 
 	sprintf(result, "buff %p buffsz %d index %d", xb->buff, xb->buffsz, xb->index);
 	Tcl_SetResult(ti, result, TCL_VOLATILE);

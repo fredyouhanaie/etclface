@@ -12,7 +12,7 @@
 package require tcltest
 
 # full verbosity = {body start skip pass error line}
-tcltest::configure -verbose {start skip pass}
+tcltest::configure -verbose {start skip pass error}
 
 # we expect the test suite to be in the same directory as this one
 source [file join [file dirname $argv0] etclface-testsuite.tcl]

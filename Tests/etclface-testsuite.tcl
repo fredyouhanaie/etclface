@@ -208,4 +208,68 @@ proc xconnect_4 {} {
 	return -code error "etclface::xconnect with invalid timeout succeeded"
 }
 
+array set all_tests {xbuff_1 {etclface::xb_new with bad arguments}}
+proc xbuff_1 {} {
+	if [catch { etclface::xb_new a_bad_argument } result ] {
+		if [string match {Only -withversion*} $result] { return }
+		return -code error $result
+	}
+	return -code error "etclface:xb_new with bad arguments succeeded!"
+}
+
+array set all_tests {xbuff_2 {etclface::xb_new no version}}
+proc xbuff_2 {} {
+	if [catch { set xb [etclface::xb_new] }] {
+		return -code error $result
+	}
+	etclface::xb_free $xb
+	return
+}
+
+array set all_tests {xbuff_3 {etclface::xb_new with version}}
+proc xbuff_3 {} {
+	if [catch { set xb [etclface::xb_new -withversion] } result] {
+		return -code error $result
+	}
+	etclface::xb_free $xb
+	return
+}
+
+array set all_tests {xbuff_4 {etclface::xb_show with bad argument}}
+proc xbuff_4 {} {
+	if [catch {etclface::xb_show a_bad_argument} result] {
+		if [string match {Invalid xb handle} $result] { return }
+		return -code error $result
+	}
+	return -code error "etclface:xb_show with bad argument succeeded!"
+}
+
+array set all_tests {xbuff_5 {etclface::xb_show with good argument}}
+proc xbuff_5 {} {
+	if [catch {	set xb [etclface::xb_new]
+			etclface::xb_free $xb
+			} result] {
+		return -code error $result
+	}
+	return
+}
+
+array set all_tests {xbuff_6 {etclface::xb_free with good argument}}
+proc xbuff_6 {} {
+	if [catch {etclface::xb_free a_bad_argument} result] {
+		if [string match {Invalid xb handle} $result] { return }
+		return -code error $result
+	}
+	return -code error "etclface::xb_free with bad argument succeeded!"
+}
+
+array set all_tests {xbuff_7 {etclface::xb_free with good argument}}
+proc xbuff_7 {} {
+	if [catch {	set xb [etclface::xb_new]
+			etclface::xb_free $xb
+			} result] {
+		return -code error $result
+	}
+	return
+}
 
