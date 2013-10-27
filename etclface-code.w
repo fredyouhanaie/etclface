@@ -407,8 +407,8 @@ registered process \.{server}, using the \.{ec} handle otained from
 static int
 Etclface_reg_send(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 {
-	if (objc != 5) {
-		Tcl_WrongNumArgs(ti, 1, objv, "ec fd server xb");
+	if ((objc < 5) || (objc>6)) {
+		Tcl_WrongNumArgs(ti, 1, objv, "ec fd server xb ?timeout?");
 		return TCL_ERROR;
 	}
 
@@ -429,8 +429,16 @@ Etclface_reg_send(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[]
 	ei_x_buff	*xb;
 	xbhandle = Tcl_GetString(objv[4]);
 	sscanf(xbhandle, "xb%p", &xb);
+	
+	unsigned int timeout;
+	if (objc = 5) {
+		timeout = 0U;
+	} else {
+		if (get_timeout(ti, objv[5], &timeout) == TCL_ERROR)
+			return TCL_ERROR;
+	}
 
-	if (ei_reg_send(ec, fd, serverport, xb->buff, xb->index) != 0) {
+	if (ei_reg_send_tmo(ec, fd, serverport, xb->buff, xb->index, timeout) != 0) {
 		char errstr[100];
 		sprintf(errstr, "ei_reg_send failed (%d)", erl_errno);
 		Tcl_SetResult(ti, errstr, TCL_VOLATILE);

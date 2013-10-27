@@ -14,7 +14,7 @@ set myalive	$mynode
 set mynodename	"${mynode}@${myhost}"
 
 set cookie	secretcookie
-set timeout	5000
+set timeout	5000 ;# milliseconds
 
 set remnode	erlnode
 set remhost	localhost
@@ -283,7 +283,7 @@ proc reg_send_1 {} {
 	return -code error "etclface::reg_send with no argument succeeded!"
 }
 
-array set all_tests {reg_send_2 {reg_send with correct args}}
+array set all_tests {reg_send_2 {reg_send without timeout}}
 proc reg_send_2 {} {
 	if [catch {	set ec [etclface::init $::mynode $::cookie]
 			set fd [etclface::connect $ec $::remnodename]
@@ -291,6 +291,28 @@ proc reg_send_2 {} {
 			etclface::encode::string $xb "Hello, World!"
 			etclface::reg_send $ec $fd $::remserver $xb
 			} result] {
+		if [info exists ec] { etclface::ec_free $ec }
+		if [info exists fd] { etclface::disconnect $fd }
+		if [info exists xb] { etclface::xb_free $xb }
+		return -code error $result
+	}
+	etclface::ec_free $ec
+	etclface::disconnect $fd
+	etclface::xb_free $xb
+	return
+}
+
+array set all_tests {reg_send_3 {reg_send with timeout}}
+proc reg_send_3 {} {
+	if [catch {	set ec [etclface::init $::mynode $::cookie]
+			set fd [etclface::connect $ec $::remnodename]
+			set xb [etclface::xb_new -withversion]
+			etclface::encode::string $xb "Hello, World!"
+			etclface::reg_send $ec $fd $::remserver $xb $::timeout
+			} result] {
+		if [info exists ec] { etclface::ec_free $ec }
+		if [info exists fd] { etclface::disconnect $fd }
+		if [info exists xb] { etclface::xb_free $xb }
 		return -code error $result
 	}
 	etclface::ec_free $ec
