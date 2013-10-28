@@ -194,12 +194,12 @@ Etclface_init(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 
 	ec = (ei_cnode *)Tcl_AttemptAlloc(sizeof(ei_cnode));
 	if (ec == NULL) {
-		Tcl_SetResult(ti, "Could not allocate memory for ei_cnode", TCL_STATIC);
+		Tcl_SetObjResult(ti, Tcl_NewStringObj("Could not allocate memory for ei_cnode", -1));
 		return TCL_ERROR;
 	}
 
 	if (ei_connect_init(ec, nodename, cookie, 0) < 0) {
-		Tcl_SetResult(ti, "ei_connect_init failed", TCL_STATIC);
+		Tcl_SetObjResult(ti, Tcl_NewStringObj("ei_connect_init failed", -1));
 		return TCL_ERROR;
 	}
 
@@ -238,14 +238,14 @@ Etclface_xinit(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 
 	ec = (ei_cnode *)Tcl_AttemptAlloc(sizeof(ei_cnode));
 	if (ec == NULL) {
-		Tcl_SetResult(ti, "Could not allocate memory for ei_cnode", TCL_STATIC);
+		Tcl_SetObjResult(ti, Tcl_NewStringObj("Could not allocate memory for ei_cnode", -1));
 		return TCL_ERROR;
 	}
 
 	int res = ei_connect_xinit(ec, host, alive, node, ipaddr, cookie, (short)0);
 	Tcl_Free((char *)ipaddr);
 	if (res<0) {
-		Tcl_SetResult(ti, "ei_connect_xinit failed", TCL_STATIC);
+		Tcl_SetObjResult(ti, Tcl_NewStringObj("ei_connect_xinit failed", -1));
 		return TCL_ERROR;
 	}
 
@@ -440,7 +440,7 @@ Etclface_reg_send(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[]
 
 	if (ei_reg_send_tmo(ec, fd, serverport, xb->buff, xb->index, timeout) != 0) {
 		char errstr[100];
-		sprintf(errstr, "ei_reg_send failed (%d)", erl_errno);
+		sprintf(errstr, "ei_reg_send_tmo failed (erl_errno=%d)", erl_errno);
 		Tcl_SetResult(ti, errstr, TCL_VOLATILE);
 		return TCL_ERROR;
 	}
@@ -490,13 +490,13 @@ Etclface_xb_new(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 		return TCL_ERROR;
 	}
 	if ((objc==2) && strcmp(Tcl_GetString(objv[1]), "-withversion")) {
-		Tcl_SetResult(ti, "Only -withversion allowed as argument.", TCL_STATIC);
+		Tcl_SetObjResult(ti, Tcl_NewStringObj("Only -withversion allowed as argument", -1));
 		return TCL_ERROR;
 	}
 
 	xb = (ei_x_buff *)Tcl_AttemptAlloc(sizeof(ei_x_buff));
 	if (xb == NULL) {
-		Tcl_SetResult(ti, "Could not allocate memory for ei_x_buff", TCL_STATIC);
+		Tcl_SetObjResult(ti, Tcl_NewStringObj("Could not allocate memory for ei_x_buff", -1));
 		return TCL_ERROR;
 	}
 
@@ -535,7 +535,7 @@ Etclface_xb_free(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 
 	xbhandle = Tcl_GetString(objv[1]);
 	if (sscanf(xbhandle, "xb%p", &xb) != 1) {
-		Tcl_SetResult(ti, "Invalid xb handle", TCL_STATIC);
+		Tcl_SetObjResult(ti, Tcl_NewStringObj("Invalid xb handle", -1));
 		return TCL_ERROR;
 	}
 
@@ -576,7 +576,7 @@ Etclface_xb_show(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 
 	xbhandle = Tcl_GetString(objv[1]);
 	if (sscanf(xbhandle, "xb%p", &xb) != 1) {
-		Tcl_SetResult(ti, "Invalid xb handle", TCL_STATIC);
+		Tcl_SetObjResult(ti, Tcl_NewStringObj("Invalid xb handle", -1));
 		return  TCL_ERROR;
 	}
 
@@ -679,7 +679,7 @@ Etclface_encode_char(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const obj
 
 	chstr = Tcl_GetString(objv[2]);
 	if (strlen(chstr) != 1) {
-		Tcl_SetResult(ti, "char must be a single character.", TCL_STATIC);
+		Tcl_SetObjResult(ti, Tcl_NewStringObj("char must be a single character", -1));
 		return TCL_ERROR;
 	}
 
@@ -808,7 +808,7 @@ Etclface_encode_list_header(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *co
 	if (Tcl_GetInt(ti, Tcl_GetString(objv[2]), &arity) == TCL_ERROR)
 		return TCL_ERROR;
 	if (arity < 0) {
-		Tcl_SetResult(ti, "arity cannot be negative.", TCL_STATIC);
+		Tcl_SetObjResult(ti, Tcl_NewStringObj("arity cannot be negative", -1));
 		return TCL_ERROR;
 	}
 
@@ -870,7 +870,7 @@ Etclface_encode_tuple_header(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *c
 	if (Tcl_GetInt(ti, Tcl_GetString(objv[2]), &arity) == TCL_ERROR)
 		return TCL_ERROR;
 	if (arity < 0) {
-		Tcl_SetResult(ti, "arity cannot be negative.", TCL_STATIC);
+		Tcl_SetObjResult(ti, Tcl_NewStringObj("arity cannot be negative", -1));
 		return TCL_ERROR;
 	}
 
@@ -1043,7 +1043,7 @@ Etclface_ec_free(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 	const char *echandle = Tcl_GetString(objv[1]);
 
 	if (sscanf(echandle, "ec%p", &ec) != 1) {
-		Tcl_SetResult(ti, "Invalid ec handle", TCL_STATIC);
+		Tcl_SetObjResult(ti, Tcl_NewStringObj("Invalid ec handle", -1));
 		return TCL_ERROR;
 	}
 
@@ -1068,7 +1068,7 @@ get_timeout(Tcl_Interp *ti, Tcl_Obj *tclobj, unsigned *timeout) {
 	if (Tcl_GetInt(ti, Tcl_GetString(tclobj), &tmo) == TCL_ERROR)
 		return TCL_ERROR;
 	if (tmo < 0) {
-		Tcl_SetResult(ti, "timeout cannot be negative", TCL_STATIC);
+		Tcl_SetObjResult(ti, Tcl_NewStringObj("timeout cannot be negative", -1));
 		return TCL_ERROR;
 	}
 	*timeout = tmo;
@@ -1087,12 +1087,12 @@ get_ipaddr(Tcl_Interp *ti, Tcl_Obj *tclobj, Erl_IpAddr *ipaddr) {
 	struct in_addr	*inaddr;
 	inaddr = (struct in_addr *)Tcl_AttemptAlloc(sizeof(ei_cnode));
 	if (inaddr == NULL) {
-		Tcl_SetResult(ti, "Could not allocate memory for ipaddr", TCL_STATIC);
+		Tcl_SetObjResult(ti, Tcl_NewStringObj("Could not allocate memory for ipaddr", -1));
 		return TCL_ERROR;
 	}
 	if (!inet_aton(Tcl_GetString(tclobj), inaddr)) {
 		Tcl_Free((char *)inaddr);
-		Tcl_SetResult(ti, "Invalid ipaddr", TCL_STATIC);
+		Tcl_SetObjResult(ti, Tcl_NewStringObj("Invalid ipaddr", -1));
 		return TCL_ERROR;
 	}
 	*ipaddr = (Erl_IpAddr)inaddr;
