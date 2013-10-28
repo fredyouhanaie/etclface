@@ -321,3 +321,310 @@ proc reg_send_3 {} {
 	return
 }
 
+array set all_tests {encode_atom_1 {encode atom with wrong arguments}}
+proc encode_atom_1 {} {
+	if [catch {etclface::encode_atom} result] {
+		if [string match {wrong # args*} $result] { return }
+		return -code error $result
+	}
+	return -code error "etclface::encode_atom with no args succeeded!"
+}
+
+array set all_tests {encode_atom_2 {encode atom with bad arguments}}
+proc encode_atom_2 {} {
+	if [catch {etclface::encode_atom bad_xb hello} result] {
+		if [string match {Invalid xb handle*} $result] { return }
+		return -code error $result
+	}
+	return -code error "etclface::encode_atom with bad args succeeded!"
+}
+
+array set all_tests {encode_atom_3 {encode atom success}}
+proc encode_atom_3 {} {
+	if [catch {	set xb [etclface::xb_new]
+			etclface::encode_atom $xb hello
+			} result] {
+		return -code error $result
+	}
+	etclface::xb_free $xb
+	return
+}
+
+array set all_tests {encode_boolean_1 {encode boolean with wrong arguments}}
+proc encode_boolean_1 {} {
+	if [catch {etclface::encode_boolean} result] {
+		if [string match {wrong # args*} $result] { return }
+		return -code error $result
+	}
+	return -code error "etclface::encode_boolean with no args succeeded!"
+}
+
+array set all_tests {encode_boolean_2 {encode boolean with bad arguments}}
+proc encode_boolean_2 {} {
+	if [catch {	set xb [etclface::xb_new]
+			etclface::encode_boolean $xb positive
+			} result] {
+		if [string match {expected boolean*} $result] { return }
+		return -code error $result
+	}
+	return -code error "etclface::encode_boolean with bad args succeeded!"
+}
+
+array set all_tests {encode_boolean_3 {encode boolean with good arguments}}
+proc encode_boolean_3 {} {
+	if [catch {	set xb [etclface::xb_new]
+			etclface::encode_boolean $xb true
+			} result] {
+		return -code error $result
+	}
+	etclface::xb_free $xb
+	return
+}
+
+array set all_tests {encode_char_1 {encode char with wrongs arguments}}
+proc encode_char_1 {} {
+	if [catch {etclface::encode_char} result] {
+		if [string match {wrong # args*} $result] { return }
+		return -code error $result
+	}
+	return -code error "etclface::encode_char with no args succeeded!"
+}
+
+array set all_tests {encode_char_2 {encode char with bad arguments}}
+proc encode_char_2 {} {
+	if [catch {	set xb [etclface::xb_new]
+			etclface::encode_char $xb abc
+			} result] {
+		if [string match {char must be a single*} $result] { return }
+		return -code error $result
+	}
+	return -code error "etclface::encode_char with bad args succeeded!"
+}
+
+array set all_tests {encode_char_3 {encode char with good args}}
+proc encode_char_3 {} {
+	if [catch {	set xb [etclface::xb_new]
+			etclface::encode_char $xb Z
+			} result] {
+		if [info exists xb] {etclface::xb_free $xb}
+		return -code error $result
+	}
+	etclface::xb_free $xb
+	return
+}
+
+array set all_tests {encode_double_1 {encode double with wrong arguments}}
+proc encode_double_1 {} {
+	if [catch {etclface::encode_double} result] {
+		if [string match {wrong # args*} $result] { return }
+		return -code error $result
+	}
+	return -code error "etclface::encode_double with no args succeeded!"
+}
+
+array set all_tests {encode_double_2 {encode double with bad number}}
+proc encode_double_2 {} {
+	if [catch {	set xb [etclface::xb_new]
+			etclface::encode_double $xb bad_number
+			} result] {
+		if [string match {expected floating-point*} $result] { return }
+		if [info exists xb] {etclface::xb_free $xb}
+		return -code error $result
+	}
+	if [info exists xb] {etclface::xb_free $xb}
+	return -code error "etclface::encode_double with bad number succeeded!"
+}
+
+array set all_tests {encode_double_3 {encode double with good number}}
+proc encode_double_3 {} {
+	if [catch {	set xb [etclface::xb_new]
+			etclface::encode_double $xb 3.1415
+			} result] {
+		if [info exists xb] {etclface::xb_free $xb}
+		return -code error $result
+	}
+	etclface::xb_free $xb
+	return
+}
+
+array set all_tests {encode_long_1 {encode long with wrong arguments}}
+proc encode_long_1 {} {
+	if [catch {etclface::encode_long} result] {
+		if [string match {wrong # args*} $result] { return }
+		return -code error $result
+	}
+	return -code error "etclface::encode_long with no args succeeded!"
+}
+
+array set all_tests {encode_long_2 {encode long with bad number}}
+proc encode_long_2 {} {
+	if [catch {	set xb [etclface::xb_new]
+			etclface::encode_long $xb not_a_number
+			} result] {
+		if [info exists xb] {etclface::xb_free $xb}
+		if [string match {expected integer *} $result] { return }
+		return -code error $result
+	}
+	etclface::xb_free $xb
+	return -code error "etclface::encode_long with bad args succeeded!"
+}
+
+array set all_tests {encode_long_3 {encode long with good number}}
+proc encode_long_3 {} {
+	if [catch {	set xb [etclface::xb_new]
+			etclface::encode_long $xb 42
+			} result] {
+		if [info exists xb] {etclface::xb_free $xb}
+		return -code error $result
+	}
+	etclface::xb_free $xb
+	return
+}
+
+array set all_tests {encode_string_1 {encode string with wrong arguments}}
+proc encode_string_1 {} {
+	if [catch {etclface::encode_string} result] {
+		if [string match {wrong # args*} $result] { return }
+		return -code error $result
+	}
+	return -code error "etclface::encode_string with no args succeeded!"
+}
+
+array set all_tests {encode_string_2 {encode string with good arguments}}
+proc encode_string_2 {} {
+	if [catch {	set xb [etclface::xb_new]
+			etclface::encode_string $xb {how long is a piece of string?}
+			} result] {
+		if [info exists xb] {etclface::xb_free $xb}
+		return -code error $result
+	}
+	etclface::xb_free $xb
+	return
+}
+
+array set all_tests {encode_list_1 {encode list with wrong arguments}}
+proc encode_list_1 {} {
+	if [catch {etclface::encode_list_header} result] {
+		if [string match {wrong # args*} $result] { return }
+		return -code error $result
+	}
+	return -code error "etclface::encode_list_header with no args succeeded!"
+}
+
+array set all_tests {encode_list_2 {encode list with bad arity}}
+proc encode_list_2 {} {
+	if [catch {	set xb [etclface::xb_new]
+			etclface::encode_list_header $xb -1
+			} result] {
+		if [info exists xb] {etclface::xb_free $xb}
+		if [string match {arity cannot be*} $result] { return }
+		return -code error $result
+	}
+	return -code error "etclface::encode_list_header with bad args succeeded!"
+}
+
+array set all_tests {encode_list_3 {encode list with good arguments}}
+proc encode_list_3 {} {
+	if [catch {	set xb [etclface::xb_new]
+			etclface::encode_list_header $xb 2
+			} result] {
+		if [info exists xb] {etclface::xb_free $xb}
+		return -code error $result
+	}
+	etclface::xb_free $xb
+	return
+}
+
+array set all_tests {encode_empty_list_1 {encode empty list with wrong arguments}}
+proc encode_empty_list_1 {} {
+	if [catch {etclface::encode_empty_list} result] {
+		if [string match {wrong # args*} $result] { return }
+		return -code error $result
+	}
+	return -code error "etclface::encode_empty_list with no args succeeded!"
+}
+
+array set all_tests {encode_empty_list_2 {encode empty list with good arguments}}
+proc encode_empty_list_2 {} {
+	if [catch {	set xb [etclface::xb_new]
+			etclface::encode_empty_list $xb
+			} result] {
+		if [info exists xb] {etclface::xb_free $xb}
+		return -code error $result
+	}
+	etclface::xb_free $xb
+	return
+}
+
+array set all_tests {encode_tuple_1 {encode tuple with wrong arguments}}
+proc encode_tuple_1 {} {
+	if [catch {etclface::encode_tuple_header} result] {
+		if [string match {wrong # args*} $result] { return }
+		return -code error $result
+	}
+	return -code error "etclface::encode_tuple_header with no args succeeded!"
+}
+
+array set all_tests {encode_tuple_2 {encode tuple with bad arguments}}
+proc encode_tuple_2 {} {
+	if [catch {	set xb [etclface::xb_new]
+			etclface::encode_tuple_header $xb -1
+			} result] {
+		if [info exists xb] {etclface::xb_free $xb}
+		if [string match {arity cannot be*} $result] { return }
+		return -code error $result
+	}
+	if [info exists xb] {etclface::xb_free $xb}
+	return -code error "etclface::encode_tuple_header with bad args succeeded!"
+}
+
+array set all_tests {encode_tuple_3 {encode tuple with good arguments}}
+proc encode_tuple_3 {} {
+	if [catch {	set xb [etclface::xb_new]
+			etclface::encode_tuple_header $xb 2
+			} result] {
+		if [info exists xb] {etclface::xb_free $xb}
+		return -code error $result
+	}
+	etclface::xb_free $xb
+	return
+}
+
+array set all_tests {encode_pid_1 {encode pid with wrong arguments}}
+proc encode_pid_1 {} {
+	if [catch {etclface::encode_pid} result] {
+		if [string match {wrong # args*} $result] { return }
+		return -code error $result
+	}
+	return -code error "etclface::encode_pid with no args succeeded!"
+}
+
+array set all_tests {encode_pid_2 {encode pid with bad arguments}}
+proc encode_pid_2 {} {
+	if [catch {	set xb [etclface::xb_new]
+			etclface::encode_pid $xb not_a_pid
+			} result] {
+		if [info exists xb] {etclface::xb_free $xb}
+		if [string match {Invalid pid handle*} $result] { return }
+		return -code error $result
+	}
+	etclface::xb_free $xb
+	return -code error "etclface::encode_pid with bad args succeeded!"
+}
+
+array set all_tests {encode_pid_3 {encode pid with good arguments}}
+proc encode_pid_3 {} {
+	if [catch {	set ec [etclface::init $::mynode]
+			set xb [etclface::xb_new]
+			etclface::encode_pid $xb [etclface::self $ec]
+			} result] {
+		if [info exists ec] {etclface::ec_free $ec}
+		if [info exists xb] {etclface::xb_free $xb}
+		return -code error $result
+	}
+	etclface::ec_free $ec
+	etclface::xb_free $xb
+	return
+}
+
+
