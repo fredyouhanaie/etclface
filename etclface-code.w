@@ -204,7 +204,7 @@ Etclface_init(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 	}
 
 	sprintf(echandle, "ec%p", ec);
-	Tcl_SetResult(ti, echandle, TCL_VOLATILE);
+	Tcl_SetObjResult(ti, Tcl_NewStringObj(echandle, -1));
 	return TCL_OK;
 }
 
@@ -250,7 +250,7 @@ Etclface_xinit(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 	}
 
 	sprintf(echandle, "ec%p", ec);
-	Tcl_SetResult(ti, echandle, TCL_VOLATILE);
+	Tcl_SetObjResult(ti, Tcl_NewStringObj(echandle, -1));
 	return TCL_OK;
 }
 
@@ -307,13 +307,11 @@ Etclface_connect(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 	if ((fd = ei_connect_tmo(ec, nodename, timeout)) < 0) {
 		char errstr[100];
 		sprintf(errstr, "ei_connect failed (erl_errno=%d)", erl_errno);
-		Tcl_SetResult(ti, errstr, TCL_VOLATILE);
+		Tcl_SetObjResult(ti, Tcl_NewStringObj(errstr, -1));
 		return TCL_ERROR;
 	}
 
-	char fdstr[100];
-	sprintf(fdstr, "%d", fd);
-	Tcl_SetResult(ti, fdstr, TCL_VOLATILE);
+	Tcl_SetObjResult(ti, Tcl_NewIntObj(fd));
 
 	return TCL_OK;
 }
@@ -332,7 +330,6 @@ Etclface_xconnect(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[]
 	Erl_IpAddr	ipaddr;
 	unsigned	timeout;
 	int		fd;
-	char		fdstr[100];
 
 	if ((objc!=4) && (objc!=5)) {
 		Tcl_WrongNumArgs(ti, 1, objv, "ec ipaddr alivename ?timeout?");
@@ -357,12 +354,11 @@ Etclface_xconnect(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[]
 	if ((fd = ei_xconnect_tmo(ec, ipaddr, alivename, timeout)) < 0) {
 		char errstr[100];
 		sprintf(errstr, "ei_xconnect failed (erl_errno=%d)", erl_errno);
-		Tcl_SetResult(ti, errstr, TCL_VOLATILE);
+		Tcl_SetObjResult(ti, Tcl_NewStringObj(errstr, -1));
 		return TCL_ERROR;
 	}
 
-	sprintf(fdstr, "%d", fd);
-	Tcl_SetResult(ti, fdstr, TCL_VOLATILE);
+	Tcl_SetObjResult(ti, Tcl_NewIntObj(fd));
 
 	return TCL_OK;
 }
@@ -388,7 +384,7 @@ Etclface_disconnect(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv
 	if (close(fd) < 0) {
 		char errstr[100];
 		sprintf(errstr, "close failed (errno=%d)", errno);
-		Tcl_SetResult(ti, errstr, TCL_VOLATILE);
+		Tcl_SetObjResult(ti, Tcl_NewStringObj(errstr, -1));
 		return TCL_ERROR;
 	}
 
@@ -441,7 +437,7 @@ Etclface_reg_send(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[]
 	if (ei_reg_send_tmo(ec, fd, serverport, xb->buff, xb->index, timeout) != 0) {
 		char errstr[100];
 		sprintf(errstr, "ei_reg_send_tmo failed (erl_errno=%d)", erl_errno);
-		Tcl_SetResult(ti, errstr, TCL_VOLATILE);
+		Tcl_SetObjResult(ti, Tcl_NewStringObj(errstr, -1));
 		return TCL_ERROR;
 	}
 
@@ -505,13 +501,13 @@ Etclface_xb_new(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 		Tcl_Free((char *)xb);
 		char errstr[100];
 		sprintf(errstr, "ei_x_new/ei_x_new_with_version failed (erl_errno=%d)", erl_errno);
-		Tcl_SetResult(ti, errstr, TCL_VOLATILE);
+		Tcl_SetObjResult(ti, Tcl_NewStringObj(errstr, -1));
 		return TCL_ERROR;
 	}
 
 	char xbhandle[100];
 	sprintf(xbhandle, "xb%p", xb);
-	Tcl_SetResult(ti, xbhandle, TCL_VOLATILE);
+	Tcl_SetObjResult(ti, Tcl_NewStringObj(xbhandle, -1));
 
 	return TCL_OK;
 }
@@ -542,7 +538,7 @@ Etclface_xb_free(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 	if (ei_x_free(xb) < 0) {
 		char errstr[100];
 		sprintf(errstr, "ei_x_free failed (erl_errno=%d)", erl_errno);
-		Tcl_SetResult(ti, errstr, TCL_VOLATILE);
+		Tcl_SetObjResult(ti, Tcl_NewStringObj(errstr, -1));
 		return TCL_ERROR;
 	}
 
@@ -581,7 +577,7 @@ Etclface_xb_show(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 	}
 
 	sprintf(result, "buff %p buffsz %d index %d", xb->buff, xb->buffsz, xb->index);
-	Tcl_SetResult(ti, result, TCL_VOLATILE);
+	Tcl_SetObjResult(ti, Tcl_NewStringObj(result, -1));
 
 	return TCL_OK;
 }
@@ -617,7 +613,7 @@ Etclface_encode_atom(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const obj
 	if (ei_x_encode_atom(xb, atom) < 0) {
 		char errstr[100];
 		sprintf(errstr, "ei_x_encode_atom failed (erl_errno=%d)", erl_errno);
-		Tcl_SetResult(ti, errstr, TCL_VOLATILE);
+		Tcl_SetObjResult(ti, Tcl_NewStringObj(errstr, -1));
 	}
 
 	return TCL_OK;
@@ -652,7 +648,7 @@ Etclface_encode_boolean(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const 
 	if (ei_x_encode_boolean(xb, boolean) < 0) {
 		char errstr[100];
 		sprintf(errstr, "ei_x_encode_boolean failed (erl_errno=%d)", erl_errno);
-		Tcl_SetResult(ti, errstr, TCL_VOLATILE);
+		Tcl_SetObjResult(ti, Tcl_NewStringObj(errstr, -1));
 	}
 
 	return TCL_OK;
@@ -686,7 +682,7 @@ Etclface_encode_char(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const obj
 	if (ei_x_encode_char(xb, chstr[0]) < 0) {
 		char errstr[100];
 		sprintf(errstr, "ei_x_encode_char failed (erl_errno=%d)", erl_errno);
-		Tcl_SetResult(ti, errstr, TCL_VOLATILE);
+		Tcl_SetObjResult(ti, Tcl_NewStringObj(errstr, -1));
 	}
 
 	return TCL_OK;
@@ -718,7 +714,7 @@ Etclface_encode_double(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const o
 	if (ei_x_encode_double(xb, dbl) < 0) {
 		char errstr[100];
 		sprintf(errstr, "ei_x_encode_double failed (erl_errno=%d)", erl_errno);
-		Tcl_SetResult(ti, errstr, TCL_VOLATILE);
+		Tcl_SetObjResult(ti, Tcl_NewStringObj(errstr, -1));
 	}
 
 	return TCL_OK;
@@ -750,7 +746,7 @@ Etclface_encode_long(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const obj
 	if (ei_x_encode_long(xb, lng) < 0) {
 		char errstr[100];
 		sprintf(errstr, "ei_x_encode_long failed (erl_errno=%d)", erl_errno);
-		Tcl_SetResult(ti, errstr, TCL_VOLATILE);
+		Tcl_SetObjResult(ti, Tcl_NewStringObj(errstr, -1));
 	}
 
 	return TCL_OK;
@@ -780,7 +776,7 @@ Etclface_encode_string(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const o
 	if (ei_x_encode_string(xb, str) < 0) {
 		char errstr[100];
 		sprintf(errstr, "ei_x_encode_string failed (erl_errno=%d)", erl_errno);
-		Tcl_SetResult(ti, errstr, TCL_VOLATILE);
+		Tcl_SetObjResult(ti, Tcl_NewStringObj(errstr, -1));
 	}
 
 	return TCL_OK;
@@ -815,7 +811,7 @@ Etclface_encode_list_header(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *co
 	if (ei_x_encode_list_header(xb, arity) < 0) {
 		char errstr[100];
 		sprintf(errstr, "ei_x_encode_list_header failed (erl_errno=%d)", erl_errno);
-		Tcl_SetResult(ti, errstr, TCL_VOLATILE);
+		Tcl_SetObjResult(ti, Tcl_NewStringObj(errstr, -1));
 	}
 
 	return TCL_OK;
@@ -842,7 +838,7 @@ Etclface_encode_empty_list(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *con
 	if (ei_x_encode_empty_list(xb) < 0) {
 		char errstr[100];
 		sprintf(errstr, "ei_x_encode_empty_list failed (erl_errno=%d)", erl_errno);
-		Tcl_SetResult(ti, errstr, TCL_VOLATILE);
+		Tcl_SetObjResult(ti, Tcl_NewStringObj(errstr, -1));
 	}
 
 	return TCL_OK;
@@ -877,7 +873,7 @@ Etclface_encode_tuple_header(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *c
 	if (ei_x_encode_tuple_header(xb, arity) < 0) {
 		char errstr[100];
 		sprintf(errstr, "ei_x_encode_tuple_header failed (erl_errno=%d)", erl_errno);
-		Tcl_SetResult(ti, errstr, TCL_VOLATILE);
+		Tcl_SetObjResult(ti, Tcl_NewStringObj(errstr, -1));
 	}
 
 	return TCL_OK;
@@ -911,7 +907,7 @@ Etclface_encode_pid(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv
 	if (ei_x_encode_pid(xb, pid) < 0) {
 		char errstr[100];
 		sprintf(errstr, "ei_x_encode_pid failed (erl_errno=%d)", erl_errno);
-		Tcl_SetResult(ti, errstr, TCL_VOLATILE);
+		Tcl_SetObjResult(ti, Tcl_NewStringObj(errstr, -1));
 	}
 
 	return TCL_OK;
@@ -956,7 +952,7 @@ Etclface_self(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 	char pidhandle[100];
 	sprintf(pidhandle, "pid%p", self);
 
-	Tcl_SetResult(ti, pidhandle, TCL_VOLATILE);
+	Tcl_SetObjResult(ti, Tcl_NewStringObj(pidhandle, -1));
 	return TCL_OK;
 }
 
@@ -981,7 +977,7 @@ Etclface_nodename(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[]
 	char *nodename;
 	nodename = (char *)ei_thisnodename(ec);
 
-	Tcl_SetResult(ti, nodename, TCL_VOLATILE);
+	Tcl_SetObjResult(ti, Tcl_NewStringObj(nodename, -1));
 	return TCL_OK;
 }
 
@@ -999,7 +995,6 @@ static int
 Etclface_tracelevel(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 {
 	int level;
-	char levelstr[100];
 
 	if ((objc<1) || (objc>2)) {
 		Tcl_WrongNumArgs(ti, 1, objv, "?level?");
@@ -1007,8 +1002,7 @@ Etclface_tracelevel(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv
 	}
 
 	if (objc == 1) {
-		sprintf(levelstr, "%d", ei_get_tracelevel());
-		Tcl_SetResult(ti, levelstr, TCL_VOLATILE);
+		Tcl_SetObjResult(ti, Tcl_NewIntObj(level));
 		return TCL_OK;
 	}
 
