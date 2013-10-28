@@ -3,8 +3,14 @@
 # run-testsuite.tcl
 #	run the tests
 #
-# - run the tests listed on the command line
+# Usage:
+#	run-testsuite.tcl [-glob|-exact|-regexp] [pattern]
+#
 # - run all the tests, if no tests supplied on the command line
+# - run the tests identified by command line pattern, e.g.
+#	run-testsuite.tcl xinit_*
+#	run-testsuite.tcl -glob xinit_*
+#	run-testsuite.tcl -regexp *._1
 #
 # connect_[23] require an erlang node to be present on the local host
 # - start it with "erl -sname erlnode -setcookie secretcookie"
@@ -25,18 +31,8 @@ proc runtest {tname tdesc} {
 	}
 }
 
-if {$argc == 0} {
-	set tests [lsort [array names all_tests]]
-} else {
-	set tests $argv
-}
-
-foreach tname $tests {
-	if {$tname in [array names all_tests]} {
-		runtest $tname $all_tests($tname)
-	} else {
-		puts stderr "Unknown test name >$tname<"
-	}
+foreach tname [lsort [array names all_tests {*}$argv]] {
+	runtest $tname $all_tests($tname)
 }
 
 puts {=========================}
