@@ -382,7 +382,8 @@ Etclface_disconnect(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv
 		return TCL_ERROR;
 	}
 
-	if (Tcl_GetIntFromObj(ti, objv[1], &fd) == TCL_ERROR) return TCL_ERROR;
+	if (Tcl_GetIntFromObj(ti, objv[1], &fd) == TCL_ERROR)
+		return TCL_ERROR;
 
 	if (close(fd) < 0) {
 		char errstr[100];
@@ -418,9 +419,8 @@ Etclface_reg_send(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[]
 	sscanf(echandle, "ec%p", &ec);
 
 	int fd;
-	if (Tcl_GetInt(ti, Tcl_GetString(objv[2]), &fd) == TCL_ERROR) {
+	if (Tcl_GetIntFromObj(ti, objv[2], &fd) == TCL_ERROR)
 		return TCL_ERROR;
-	}
 
 	char *serverport;
 	serverport = Tcl_GetString(objv[3]);
@@ -805,7 +805,7 @@ Etclface_encode_list_header(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *co
 	char *xbhandle = Tcl_GetString(objv[1]);
 	sscanf(xbhandle, "xb%p", &xb);
 
-	if (Tcl_GetInt(ti, Tcl_GetString(objv[2]), &arity) == TCL_ERROR)
+	if (Tcl_GetIntFromObj(ti, objv[2], &arity) == TCL_ERROR)
 		return TCL_ERROR;
 	if (arity < 0) {
 		Tcl_SetObjResult(ti, Tcl_NewStringObj("arity cannot be negative", -1));
@@ -867,7 +867,7 @@ Etclface_encode_tuple_header(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *c
 	char *xbhandle = Tcl_GetString(objv[1]);
 	sscanf(xbhandle, "xb%p", &xb);
 
-	if (Tcl_GetInt(ti, Tcl_GetString(objv[2]), &arity) == TCL_ERROR)
+	if (Tcl_GetIntFromObj(ti, objv[2], &arity) == TCL_ERROR)
 		return TCL_ERROR;
 	if (arity < 0) {
 		Tcl_SetObjResult(ti, Tcl_NewStringObj("arity cannot be negative", -1));
@@ -1012,7 +1012,7 @@ Etclface_tracelevel(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv
 		return TCL_OK;
 	}
 
-	if (Tcl_GetInt(ti, Tcl_GetString(objv[1]), &level) == TCL_ERROR)
+	if (Tcl_GetIntFromObj(ti, objv[1], &level) == TCL_ERROR)
 		return TCL_ERROR;
 	ei_set_tracelevel(level);
 
@@ -1065,7 +1065,7 @@ isn returned in the \.{timeout} parameter.
 static int
 get_timeout(Tcl_Interp *ti, Tcl_Obj *tclobj, unsigned *timeout) {
 	int tmo;
-	if (Tcl_GetInt(ti, Tcl_GetString(tclobj), &tmo) == TCL_ERROR)
+	if (Tcl_GetIntFromObj(ti, tclobj, &tmo) == TCL_ERROR)
 		return TCL_ERROR;
 	if (tmo < 0) {
 		Tcl_SetObjResult(ti, Tcl_NewStringObj("timeout cannot be negative", -1));
