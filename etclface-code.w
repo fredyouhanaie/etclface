@@ -130,16 +130,16 @@ static EtclfaceCommand_t EtclfaceCommand[] = {@/
 	{"etclface::connect", Etclface_connect},@/
 	{"etclface::disconnect", Etclface_disconnect},@/
 	{"etclface::ec_free", Etclface_ec_free},@/
-	{"etclface::encode::atom", Etclface_encode_atom},@/
-	{"etclface::encode::boolean", Etclface_encode_boolean},@/
-	{"etclface::encode::char", Etclface_encode_char},@/
-	{"etclface::encode::double", Etclface_encode_double},@/
-	{"etclface::encode::empty_list", Etclface_encode_empty_list},@/
-	{"etclface::encode::list_header", Etclface_encode_list_header},@/
-	{"etclface::encode::long", Etclface_encode_long},@/
-	{"etclface::encode::pid", Etclface_encode_pid},@/
-	{"etclface::encode::string", Etclface_encode_string},@/
-	{"etclface::encode::tuple_header", Etclface_encode_tuple_header},@/
+	{"etclface::encode_atom", Etclface_encode_atom},@/
+	{"etclface::encode_boolean", Etclface_encode_boolean},@/
+	{"etclface::encode_char", Etclface_encode_char},@/
+	{"etclface::encode_double", Etclface_encode_double},@/
+	{"etclface::encode_empty_list", Etclface_encode_empty_list},@/
+	{"etclface::encode_list_header", Etclface_encode_list_header},@/
+	{"etclface::encode_long", Etclface_encode_long},@/
+	{"etclface::encode_pid", Etclface_encode_pid},@/
+	{"etclface::encode_string", Etclface_encode_string},@/
+	{"etclface::encode_tuple_header", Etclface_encode_tuple_header},@/
 	{"etclface::init", Etclface_init},@/
 	{"etclface::nodename", Etclface_nodename},@/
 	{"etclface::reg_send", Etclface_reg_send},@/
@@ -592,7 +592,7 @@ Etclface_xb_show(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 the most commonly used Erlang data types, then add more encode commands
 over time.
 
-@*2\.{etclface::encode::atom xb atom}.
+@*2\.{etclface::encode\_atom xb atom}.
 
 Takes an existing \.{ei\_x\_buff} and adds the string \.{atom} as an
 atom in binary format.
@@ -623,7 +623,7 @@ Etclface_encode_atom(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const obj
 	return TCL_OK;
 }
 
-@*2\.{etclface::encode::boolean xb boolean}.
+@*2\.{etclface::encode\_boolean xb boolean}.
 
 Takes an existing \.{ei\_x\_buff} and adds the boolean value to it.
 
@@ -658,7 +658,7 @@ Etclface_encode_boolean(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const 
 	return TCL_OK;
 }
 
-@*2\.{etclface::encode::char xb char}.
+@*2\.{etclface::encode\_char xb char}.
 
 Takes an existing \.{ei\_x\_buff} and adds the char value to it.
 
@@ -692,7 +692,7 @@ Etclface_encode_char(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const obj
 	return TCL_OK;
 }
 
-@*2\.{etclface::encode::double xb double}.
+@*2\.{etclface::encode\_double xb double}.
 
 Takes an existing \.{ei\_x\_buff} and adds the double value to it.
 
@@ -724,7 +724,7 @@ Etclface_encode_double(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const o
 	return TCL_OK;
 }
 
-@*2\.{etclface::encode::long xb long}.
+@*2\.{etclface::encode\_long xb long}.
 
 Takes an existing \.{ei\_x\_buff} and adds the long value to it.
 
@@ -756,7 +756,7 @@ Etclface_encode_long(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const obj
 	return TCL_OK;
 }
 
-@*2\.{etclface::encode::string xb string}.
+@*2\.{etclface::encode\_string xb string}.
 
 Takes an existing \.{ei\_x\_buff} and adds the string to it.
 
@@ -786,7 +786,7 @@ Etclface_encode_string(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const o
 	return TCL_OK;
 }
 
-@*2\.{etclface::encode::list\_header xb arity}.
+@*2\.{etclface::encode\_list\_header xb arity}.
 
 Initialize encoding of a list using \.{ei\_x\_encode\_list\_header()}.
 
@@ -821,7 +821,7 @@ Etclface_encode_list_header(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *co
 	return TCL_OK;
 }
 
-@*2\.{etclface::encode::empty\_list xb}.
+@*2\.{etclface::encode\_empty\_list xb}.
 
 Terminate the encoding of a list using \.{ei\_x\_encode\_empty\_list}.
 
@@ -848,7 +848,7 @@ Etclface_encode_empty_list(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *con
 	return TCL_OK;
 }
 
-@*2\.{etclface::encode::tuple\_header xb arity}.
+@*2\.{etclface::encode\_tuple\_header xb arity}.
 
 Initialize encoding of a tuple using \.{ei\_x\_encode\_tuple\_header()}.
 
@@ -883,7 +883,7 @@ Etclface_encode_tuple_header(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *c
 	return TCL_OK;
 }
 
-@*2\.{etclface::encode::pid xb pid}.
+@*2\.{etclface::encode\_pid xb pid}.
 
 Encode an \.{Erlang\_Pid} in the \.{ei\_x\_buff} structure. If the
 supplied \.{pid} is the literal \.{self}, then this processes own pid

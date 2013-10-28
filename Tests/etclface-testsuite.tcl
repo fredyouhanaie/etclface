@@ -288,7 +288,7 @@ proc reg_send_2 {} {
 	if [catch {	set ec [etclface::init $::mynode $::cookie]
 			set fd [etclface::connect $ec $::remnodename]
 			set xb [etclface::xb_new -withversion]
-			etclface::encode::string $xb "Hello, World!"
+			etclface::encode_string $xb "Hello, World!"
 			etclface::reg_send $ec $fd $::remserver $xb
 			} result] {
 		if [info exists ec] { etclface::ec_free $ec }
@@ -307,7 +307,7 @@ proc reg_send_3 {} {
 	if [catch {	set ec [etclface::init $::mynode $::cookie]
 			set fd [etclface::connect $ec $::remnodename]
 			set xb [etclface::xb_new -withversion]
-			etclface::encode::string $xb "Hello, World!"
+			etclface::encode_string $xb "Hello, World!"
 			etclface::reg_send $ec $fd $::remserver $xb $::timeout
 			} result] {
 		if [info exists ec] { etclface::ec_free $ec }
