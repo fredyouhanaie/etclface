@@ -98,6 +98,8 @@ typedef struct EtclfaceCommand_s {
 
 @<Command declarations@>=
 static Tcl_ObjCmdProc Etclface_connect;
+static Tcl_ObjCmdProc Etclface_decode_atom;
+static Tcl_ObjCmdProc Etclface_decode_long;
 static Tcl_ObjCmdProc Etclface_disconnect;
 static Tcl_ObjCmdProc Etclface_ec_free;
 static Tcl_ObjCmdProc Etclface_encode_atom;
@@ -128,6 +130,8 @@ alphabetical order. The last element must be a \.{\{NULL,NULL\}}
 @<Command declarations@>=
 static EtclfaceCommand_t EtclfaceCommand[] = {@/
 	{"etclface::connect", Etclface_connect},@/
+	{"etclface::decode_atom", Etclface_decode_atom},@/
+	{"etclface::decode_long", Etclface_decode_long},@/
 	{"etclface::disconnect", Etclface_disconnect},@/
 	{"etclface::ec_free", Etclface_ec_free},@/
 	{"etclface::encode_atom", Etclface_encode_atom},@/
@@ -909,10 +913,64 @@ Etclface_encode_pid(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv
 
 @*1Decode Commands.
 
+The decode commands implement the various \.{ei\_decode\_*} functions
+provided by \erliface.
+
+@*2\.{etclface::decode\_atom xb}.
+
 @<Decode commands@>=
 static int
-Etclface_decode(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+Etclface_decode_atom(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 {
+	ei_x_buff	*xb;
+	int		index=0;
+	char		atom[MAXATOMLEN+1];
+
+	if (objc != 2) {
+		Tcl_WrongNumArgs(ti, 1, objv, "xb");
+		return TCL_ERROR;
+	}
+
+	if (get_xb(ti, objv[1], &xb) == TCL_ERROR)
+		return TCL_ERROR;
+
+	if (ei_decode_atom(xb->buff, &index, atom) < 0) {
+		char errstr[100];
+		sprintf(errstr, "ei_decode_atom failed (erl_errno=%d)", erl_errno);
+		Tcl_SetObjResult(ti, Tcl_NewStringObj(errstr, -1));
+		return TCL_ERROR;
+	}
+
+	Tcl_SetObjResult(ti, Tcl_NewStringObj(atom, -1));
+	return TCL_OK;
+}
+
+@*2\.{etclface::decode\_long xb}.
+
+@<Decode commands@>=
+static int
+Etclface_decode_long(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+{
+	ei_x_buff	*xb;
+	int		index=0;
+	long		longnum;
+
+	if (objc != 2) {
+		Tcl_WrongNumArgs(ti, 1, objv, "xb");
+		return TCL_ERROR;
+	}
+
+	if (get_xb(ti, objv[1], &xb) == TCL_ERROR)
+		return TCL_ERROR;
+
+	if (ei_decode_long(xb->buff, &index, &longnum) < 0) {
+		char errstr[100];
+		sprintf(errstr, "ei_decode_long failed (erl_errno=%d)", erl_errno);
+		Tcl_SetObjResult(ti, Tcl_NewStringObj(errstr, -1));
+		return TCL_ERROR;
+	}
+
+	Tcl_SetObjResult(ti, Tcl_NewLongObj(longnum));
 	return TCL_OK;
 }
 

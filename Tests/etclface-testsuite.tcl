@@ -627,4 +627,81 @@ proc encode_pid_3 {} {
 	return
 }
 
+array set all_tests {decode_long_1 {decode long with no arguments}}
+proc decode_long_1 {} {
+	if [catch {etclface::decode_long} result] {
+		if [string match {wrong # args*} $result] { return }
+		return -code error $result
+	}
+	return -code error "etclface::decode_long with no args succeeded!"
+}
+
+array set all_tests {decode_long_2 {decode long with bad arguments}}
+proc decode_long_2 {} {
+	if [catch {	set xb [etclface::xb_new -withversion]
+			etclface::decode_long $xb
+			} result] {
+		if [string match {ei_decode_long failed*} $result] { return }
+		if [info exists xb] {etclface::xb_free $xb}
+		return -code error $result
+	}
+	etclface::xb_free $xb
+	return -code error "etclface::decode_long with bad args succeeded!"
+}
+
+array set all_tests {decode_long_3 {decode long with good arguments}}
+proc decode_long_3 {} {
+	set long_before 42
+	if [catch {	set xb [etclface::xb_new]
+			etclface::encode_long $xb $long_before
+			set long_after [etclface::decode_long $xb]
+			} result] {
+		if [info exists xb] {etclface::xb_free $xb}
+		return -code error $result
+	}
+	etclface::xb_free $xb
+	if {$long_before != $long_after} {
+		return -code error "etclface::decode_long returned $long_after, expected $long_before"
+	}
+	return
+}
+
+array set all_tests {decode_atom_1 {decode atom with no arguments}}
+proc decode_atom_1 {} {
+	if [catch {etclface::decode_atom} result] {
+		if [string match {wrong # args*} $result] { return }
+		return -code error $result
+	}
+	return -code error "etclface::decode_atom with no args succeeded!"
+}
+
+array set all_tests {decode_atom_2 {decode atom with bad arguments}}
+proc decode_atom_2 {} {
+	if [catch {	set xb [etclface::xb_new -withversion]
+			etclface::decode_atom $xb
+			} result] {
+		if [string match {ei_decode_atom failed*} $result] { return }
+		if [info exists xb] {etclface::xb_free $xb}
+		return -code error $result
+	}
+	etclface::xb_free $xb
+	return -code error "etclface::decode_atom with bad args succeeded!"
+}
+
+array set all_tests {decode_atom_3 {decode atom with good arguments}}
+proc decode_atom_3 {} {
+	set atom_before hello
+	if [catch {	set xb [etclface::xb_new]
+			etclface::encode_atom $xb $atom_before
+			set atom_after [etclface::decode_atom $xb]
+			} result] {
+		if [info exists xb] {etclface::xb_free $xb}
+		return -code error $result
+	}
+	etclface::xb_free $xb
+	if {$atom_before != $atom_after} {
+		return -code error "etclface::decode_atom returned $atom_after, expected $atom_before"
+	}
+	return
+}
 
