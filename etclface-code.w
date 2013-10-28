@@ -281,7 +281,6 @@ obtained from \.{etclface::init} or \.{xinit}.
 static int
 Etclface_connect(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 {
-	char *echandle;
 	ei_cnode *ec;
 	char *nodename;
 	unsigned timeout;
@@ -291,8 +290,8 @@ Etclface_connect(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 		return TCL_ERROR;
 	}
 
-	echandle = Tcl_GetString(objv[1]);
-	sscanf(echandle, "ec%p", &ec);
+	if (get_ec(ti, objv[1], &ec) == TCL_ERROR)
+		return TCL_ERROR;
 
 	nodename = Tcl_GetString(objv[2]);
 
@@ -325,7 +324,7 @@ handle obtained from \.{etclface::init} or \.{xinit}.
 static int
 Etclface_xconnect(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 {
-	char		*alivename, *echandle;
+	char		*alivename;
 	ei_cnode	*ec;
 	Erl_IpAddr	ipaddr;
 	unsigned	timeout;
@@ -336,8 +335,8 @@ Etclface_xconnect(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[]
 		return TCL_ERROR;
 	}
 
-	echandle = Tcl_GetString(objv[1]);
-	sscanf(echandle, "ec%p", &ec);
+	if (get_ec(ti, objv[1], &ec) == TCL_ERROR)
+		return TCL_ERROR;
 
 	if (get_ipaddr(ti, objv[2], &ipaddr) == TCL_ERROR)
 		return TCL_ERROR;
@@ -409,10 +408,9 @@ Etclface_reg_send(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[]
 		return TCL_ERROR;
 	}
 
-	char *echandle;
-	echandle = Tcl_GetString(objv[1]);
 	ei_cnode *ec;
-	sscanf(echandle, "ec%p", &ec);
+	if (get_ec(ti, objv[1], &ec) == TCL_ERROR)
+		return TCL_ERROR;
 
 	int fd;
 	if (Tcl_GetIntFromObj(ti, objv[2], &fd) == TCL_ERROR)
@@ -421,11 +419,10 @@ Etclface_reg_send(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[]
 	char *serverport;
 	serverport = Tcl_GetString(objv[3]);
 
-	char *xbhandle;
-	ei_x_buff	*xb;
-	xbhandle = Tcl_GetString(objv[4]);
-	sscanf(xbhandle, "xb%p", &xb);
-	
+	ei_x_buff *xb;
+	if (get_xb(ti, objv[4], &xb) == TCL_ERROR)
+		return TCL_ERROR;
+
 	unsigned int timeout;
 	if (objc = 5) {
 		timeout = 0U;
@@ -521,7 +518,6 @@ to \.{xb}.
 static int
 Etclface_xb_free(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 {
-	char *xbhandle;
 	ei_x_buff *xb;
 
 	if (objc!=2) {
@@ -529,11 +525,8 @@ Etclface_xb_free(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 		return TCL_ERROR;
 	}
 
-	xbhandle = Tcl_GetString(objv[1]);
-	if (sscanf(xbhandle, "xb%p", &xb) != 1) {
-		Tcl_SetObjResult(ti, Tcl_NewStringObj("Invalid xb handle", -1));
+	if (get_xb(ti, objv[1], &xb) == TCL_ERROR)
 		return TCL_ERROR;
-	}
 
 	if (ei_x_free(xb) < 0) {
 		char errstr[100];
@@ -562,19 +555,16 @@ is a pointer and the \.{d}s are integers. This lends itself to being parsed as a
 static int
 Etclface_xb_show(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 {
-	char *xbhandle, result[100];
-	ei_x_buff *xb;
+	char result[100];
 
 	if (objc!=2) {
 		Tcl_WrongNumArgs(ti, 1, objv, "xb");
 		return TCL_ERROR;
 	}
 
-	xbhandle = Tcl_GetString(objv[1]);
-	if (sscanf(xbhandle, "xb%p", &xb) != 1) {
-		Tcl_SetObjResult(ti, Tcl_NewStringObj("Invalid xb handle", -1));
-		return  TCL_ERROR;
-	}
+	ei_x_buff *xb;
+	if (get_xb(ti, objv[1], &xb) == TCL_ERROR)
+		return TCL_ERROR;
 
 	sprintf(result, "buff %p buffsz %d index %d", xb->buff, xb->buffsz, xb->index);
 	Tcl_SetObjResult(ti, Tcl_NewStringObj(result, -1));
@@ -597,7 +587,7 @@ atom in binary format.
 static int
 Etclface_encode_atom(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 {
-	char		*xbhandle, *atom;
+	char		*atom;
 	ei_x_buff	*xb;
 
 	if (objc!=3) {
@@ -605,8 +595,8 @@ Etclface_encode_atom(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const obj
 		return TCL_ERROR;
 	}
 
-	xbhandle = Tcl_GetString(objv[1]);
-	sscanf(xbhandle, "xb%p", &xb);
+	if (get_xb(ti, objv[1], &xb) == TCL_ERROR)
+		return TCL_ERROR;
 
 	atom = Tcl_GetString(objv[2]);
 
@@ -630,7 +620,6 @@ while \.{0}, \.{false}, \.{off} and \.{no} are classed as False.
 static int
 Etclface_encode_boolean(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 {
-	char *xbhandle;
 	int boolean;
 	ei_x_buff *xb;
 
@@ -639,8 +628,8 @@ Etclface_encode_boolean(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const 
 		return TCL_ERROR;
 	}
 
-	xbhandle = Tcl_GetString(objv[1]);
-	sscanf(xbhandle, "xb%p", &xb);
+	if (get_xb(ti, objv[1], &xb) == TCL_ERROR)
+		return TCL_ERROR;
 
 	if (Tcl_GetBooleanFromObj(ti, objv[2], &boolean) == TCL_ERROR)
 		return TCL_ERROR;
@@ -662,7 +651,7 @@ Takes an existing \.{ei\_x\_buff} and adds the char value to it.
 static int
 Etclface_encode_char(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 {
-	const char *xbhandle, *chstr;
+	const char *chstr;
 	ei_x_buff *xb;
 
 	if (objc!=3) {
@@ -670,8 +659,8 @@ Etclface_encode_char(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const obj
 		return TCL_ERROR;
 	}
 
-	xbhandle = Tcl_GetString(objv[1]);
-	sscanf(xbhandle, "xb%p", &xb);
+	if (get_xb(ti, objv[1], &xb) == TCL_ERROR)
+		return TCL_ERROR;
 
 	chstr = Tcl_GetString(objv[2]);
 	if (strlen(chstr) != 1) {
@@ -696,7 +685,6 @@ Takes an existing \.{ei\_x\_buff} and adds the double value to it.
 static int
 Etclface_encode_double(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 {
-	const char *xbhandle;
 	double dbl;
 	ei_x_buff *xb;
 
@@ -705,8 +693,8 @@ Etclface_encode_double(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const o
 		return TCL_ERROR;
 	}
 
-	xbhandle = Tcl_GetString(objv[1]);
-	sscanf(xbhandle, "xb%p", &xb);
+	if (get_xb(ti, objv[1], &xb) == TCL_ERROR)
+		return TCL_ERROR;
 
 	if (Tcl_GetDoubleFromObj(ti, objv[2], &dbl) == TCL_ERROR)
 		return TCL_ERROR;
@@ -728,7 +716,6 @@ Takes an existing \.{ei\_x\_buff} and adds the long value to it.
 static int
 Etclface_encode_long(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 {
-	const char *xbhandle;
 	long lng;
 	ei_x_buff *xb;
 
@@ -737,8 +724,8 @@ Etclface_encode_long(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const obj
 		return TCL_ERROR;
 	}
 
-	xbhandle = Tcl_GetString(objv[1]);
-	sscanf(xbhandle, "xb%p", &xb);
+	if (get_xb(ti, objv[1], &xb) == TCL_ERROR)
+		return TCL_ERROR;
 
 	if (Tcl_GetLongFromObj(ti, objv[2], &lng) == TCL_ERROR)
 		return TCL_ERROR;
@@ -760,7 +747,7 @@ Takes an existing \.{ei\_x\_buff} and adds the string to it.
 static int
 Etclface_encode_string(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 {
-	const char *xbhandle, *str;
+	const char *str;
 	ei_x_buff *xb;
 
 	if (objc!=3) {
@@ -768,8 +755,8 @@ Etclface_encode_string(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const o
 		return TCL_ERROR;
 	}
 
-	xbhandle = Tcl_GetString(objv[1]);
-	sscanf(xbhandle, "xb%p", &xb);
+	if (get_xb(ti, objv[1], &xb) == TCL_ERROR)
+		return TCL_ERROR;
 
 	str = Tcl_GetString(objv[2]);
 
@@ -777,6 +764,7 @@ Etclface_encode_string(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const o
 		char errstr[100];
 		sprintf(errstr, "ei_x_encode_string failed (erl_errno=%d)", erl_errno);
 		Tcl_SetObjResult(ti, Tcl_NewStringObj(errstr, -1));
+		return TCL_ERROR;
 	}
 
 	return TCL_OK;
@@ -798,8 +786,8 @@ Etclface_encode_list_header(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *co
 		return TCL_ERROR;
 	}
 
-	char *xbhandle = Tcl_GetString(objv[1]);
-	sscanf(xbhandle, "xb%p", &xb);
+	if (get_xb(ti, objv[1], &xb) == TCL_ERROR)
+		return TCL_ERROR;
 
 	if (Tcl_GetIntFromObj(ti, objv[2], &arity) == TCL_ERROR)
 		return TCL_ERROR;
@@ -812,6 +800,7 @@ Etclface_encode_list_header(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *co
 		char errstr[100];
 		sprintf(errstr, "ei_x_encode_list_header failed (erl_errno=%d)", erl_errno);
 		Tcl_SetObjResult(ti, Tcl_NewStringObj(errstr, -1));
+		return TCL_ERROR;
 	}
 
 	return TCL_OK;
@@ -832,13 +821,14 @@ Etclface_encode_empty_list(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *con
 		return TCL_ERROR;
 	}
 
-	char *xbhandle = Tcl_GetString(objv[1]);
-	sscanf(xbhandle, "xb%p", &xb);
+	if (get_xb(ti, objv[1], &xb) == TCL_ERROR)
+		return TCL_ERROR;
 
 	if (ei_x_encode_empty_list(xb) < 0) {
 		char errstr[100];
 		sprintf(errstr, "ei_x_encode_empty_list failed (erl_errno=%d)", erl_errno);
 		Tcl_SetObjResult(ti, Tcl_NewStringObj(errstr, -1));
+		return TCL_ERROR;
 	}
 
 	return TCL_OK;
@@ -860,8 +850,8 @@ Etclface_encode_tuple_header(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *c
 		return TCL_ERROR;
 	}
 
-	char *xbhandle = Tcl_GetString(objv[1]);
-	sscanf(xbhandle, "xb%p", &xb);
+	if (get_xb(ti, objv[1], &xb) == TCL_ERROR)
+		return TCL_ERROR;
 
 	if (Tcl_GetIntFromObj(ti, objv[2], &arity) == TCL_ERROR)
 		return TCL_ERROR;
@@ -874,6 +864,7 @@ Etclface_encode_tuple_header(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *c
 		char errstr[100];
 		sprintf(errstr, "ei_x_encode_tuple_header failed (erl_errno=%d)", erl_errno);
 		Tcl_SetObjResult(ti, Tcl_NewStringObj(errstr, -1));
+		return TCL_ERROR;
 	}
 
 	return TCL_OK;
@@ -881,15 +872,13 @@ Etclface_encode_tuple_header(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *c
 
 @*2\.{etclface::encode\_pid xb pid}.
 
-Encode an \.{Erlang\_Pid} in the \.{ei\_x\_buff} structure. If the
-supplied \.{pid} is the literal \.{self}, then this processes own pid
-will be encoded.
+Encode an \.{Erlang\_Pid} in the \.{ei\_x\_buff} structure.
 
 @<Encode commands@>=
 static int
 Etclface_encode_pid(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 {
-	const char *xbhandle, *pidhandle;
+	const char *pidhandle;
 	ei_x_buff  *xb;
 	erlang_pid *pid;
 
@@ -898,16 +887,20 @@ Etclface_encode_pid(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv
 		return TCL_ERROR;
 	}
 
-	xbhandle = Tcl_GetString(objv[1]);
-	sscanf(xbhandle, "xb%p", &xb);
+	if (get_xb(ti, objv[1], &xb) == TCL_ERROR)
+		return TCL_ERROR;
 
 	pidhandle = Tcl_GetString(objv[2]);
-	sscanf(pidhandle, "pid%p", &pid);
+	if (sscanf(pidhandle, "pid%p", &pid) != 1) {
+		Tcl_SetObjResult(ti, Tcl_NewStringObj("Invalid pid handle", -1));
+		return TCL_ERROR;
+	}
 
 	if (ei_x_encode_pid(xb, pid) < 0) {
 		char errstr[100];
 		sprintf(errstr, "ei_x_encode_pid failed (erl_errno=%d)", erl_errno);
 		Tcl_SetObjResult(ti, Tcl_NewStringObj(errstr, -1));
+		return TCL_ERROR;
 	}
 
 	return TCL_OK;
@@ -930,7 +923,7 @@ These are various commands for accessing the \.{ei\_cnode} data structures.
 
 Return the pid handle for the given \.{ei\_cnode}. The handle will
 be of the form \.{pid0x123456}, which can be used in subsequent
-\.{etclface::encode:pid} commands, and any that accept a pid.
+\.{etclface::encode\_pid} commands, and any that accept a pid.
 
 @<Utility commands@>=
 static int
@@ -941,10 +934,9 @@ Etclface_self(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 		return TCL_ERROR;
 	}
 
-	char *echandle;
-	echandle = Tcl_GetString(objv[1]);
 	ei_cnode *ec;
-	sscanf(echandle, "ec%p", &ec);
+	if (get_ec(ti, objv[1], &ec) == TCL_ERROR)
+		return TCL_ERROR;
 
 	erlang_pid *self;
 	self = ei_self(ec);
@@ -969,10 +961,9 @@ Etclface_nodename(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[]
 		return TCL_ERROR;
 	}
 
-	char *echandle;
-	echandle = Tcl_GetString(objv[1]);
 	ei_cnode *ec;
-	sscanf(echandle, "ec%p", &ec);
+	if (get_ec(ti, objv[1], &ec) == TCL_ERROR)
+		return TCL_ERROR;
 
 	char *nodename;
 	nodename = (char *)ei_thisnodename(ec);
@@ -1034,12 +1025,8 @@ Etclface_ec_free(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 		return TCL_ERROR;
 	}
 
-	const char *echandle = Tcl_GetString(objv[1]);
-
-	if (sscanf(echandle, "ec%p", &ec) != 1) {
-		Tcl_SetObjResult(ti, Tcl_NewStringObj("Invalid ec handle", -1));
+	if (get_ec(ti, objv[1], &ec) == TCL_ERROR)
 		return TCL_ERROR;
-	}
 
 	Tcl_Free((char *)ec);
 
@@ -1069,6 +1056,34 @@ get_timeout(Tcl_Interp *ti, Tcl_Obj *tclobj, unsigned *timeout) {
 	return TCL_OK;
 }
 
+@ Extract and convert an \.{xb} handle.
+
+@<Internal helper functions@>=
+static int
+get_xb(Tcl_Interp *ti, Tcl_Obj *tclobj, ei_x_buff **xb)
+{
+	const char *xbhandle = Tcl_GetString(tclobj);
+	if (sscanf(xbhandle, "xb%p", xb) != 1) {
+		Tcl_SetObjResult(ti, Tcl_NewStringObj("Invalid xb handle", -1));
+		return TCL_ERROR;
+	}
+	return TCL_OK;
+}
+
+
+@ Extract and convert an \.{ec} handle.
+
+@<Internal helper functions@>=
+static int
+get_ec(Tcl_Interp *ti, Tcl_Obj *tclobj, ei_cnode **ec)
+{
+	const char *echandle = Tcl_GetString(tclobj);
+	if (sscanf(echandle, "ec%p", ec) != 1) {
+		Tcl_SetObjResult(ti, Tcl_NewStringObj("Invalid ec handle", -1));
+		return TCL_ERROR;
+	}
+	return TCL_OK;
+}
 
 @ Extract and convert an IP address. Given a Tcl Object pointer, attempt
 to convert it to an \.{Erl\_IpAddr} type IP address. We allocate memory
