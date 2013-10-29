@@ -43,7 +43,7 @@ proc init_1 {} {
 		if [string match {wrong # args:*} $result] { return }
 		return -code error $result
 	}
-	return -code error {etclface::init with no args succeeded}
+	return -code error "etclface::init with no args succeeded"
 }
 
 array set all_tests {init_2 {etclface::init without cookie}}
@@ -51,11 +51,9 @@ proc init_2 {} {
 	if [catch { set ec [etclface::init $::mynode] } result] {
 		return -code error $result
 	}
-	if [string match "ec0x*" $ec] {
-		etclface::ec_free $ec
-		return
-	}
-	return -code error $result
+	if {![string match "ec0x*" $ec]} { return -code error $result }
+	etclface::ec_free $ec
+	return
 }
 
 array set all_tests {init_3 {etclface::init with cookie}}
@@ -63,11 +61,9 @@ proc init_3 {} {
 	if [catch { set ec [etclface::init $::mynode $::cookie] } result] {
 		return -code error $result
 	}
-	if [string match "ec0x*" $ec] {
-		etclface::ec_free $ec
-		return
-	}
-	return -code error $result
+	if {![string match "ec0x*" $ec]} { return -code error $result }
+	etclface::ec_free $ec
+	return
 }
 
 array set all_tests {xinit_1 {etclface::xinit without args}}
@@ -76,7 +72,7 @@ proc xinit_1 {} {
 		if [string match {wrong # args:*} $result] { return }
 		return -code error $result
 	}
-	return -code error {etclface::xinit with no args succeeded}
+	return -code error "etclface::xinit with no args succeeded"
 }
 
 array set all_tests {xinit_2 {etclface::xinit without cookie}}
@@ -84,11 +80,9 @@ proc xinit_2 {} {
 	if [catch { set ec [etclface::xinit $::myhost $::myalive $::mynodename $::myipaddr] } result] {
 		return -code error $result
 	}
-	if [string match "ec0x*" $ec] {
-		etclface::ec_free $ec
-		return
-	}
-	return -code error $result
+	if {![string match "ec0x*" $ec]} { return -code error $result }
+	etclface::ec_free $ec
+	return
 }
 
 array set all_tests {xinit_3 {etclface::xinit with cookie}}
@@ -96,11 +90,9 @@ proc xinit_3 {} {
 	if [catch { set ec [etclface::xinit $::myhost $::myalive $::mynodename $::myipaddr $::cookie] } result] {
 		return -code error $result
 	}
-	if [string match "ec0x*" $ec] {
-		etclface::ec_free $ec
-		return
-	}
-	return -code error $result
+	if {![string match "ec0x*" $ec]} { return -code error $result }
+	etclface::ec_free $ec
+	return
 }
 
 array set all_tests {connect_1 {etclface::connect without arguments}}
@@ -109,7 +101,7 @@ proc connect_1 {} {
 		if [string match {wrong # args:*} $result] { return }
 		return -code error $result
 	}
-	return -code error {connect with no args succeeded}
+	return -code error "etclface::connect with no args succeeded"
 }
 
 array set all_tests {connect_2 {etclface::connect with no timeout}}
@@ -117,14 +109,14 @@ proc connect_2 {} {
 	if [catch {	set ec [etclface::init $::mynode $::cookie]
 			set fd [etclface::connect $ec $::remnodename]
 			} result] {
+		if [info exists ec ] {etclface::ec_free $ec}
+		if [info exists fd ] {etclface::disconnect $fd}
 		return -code error $result
 	}
-	if [string is integer $fd] {
-		etclface::ec_free $ec
-		etclface::disconnect $fd
-		return
-	}
-	return -code error "etclface::connect did not return an integer ($fd)"
+	if {![string is integer $fd]} { return -code error "etclface::connect did not return an integer ($fd)" }
+	etclface::ec_free $ec
+	etclface::disconnect $fd
+	return
 }
 
 array set all_tests {connect_3 {etclface::connect with timeout}}
@@ -132,14 +124,14 @@ proc connect_3 {} {
 	if [catch {	set ec [etclface::init $::mynode $::cookie]
 			set fd [etclface::connect $ec $::remnodename $::timeout]
 			} result] {
+		if [info exists ec ] {etclface::ec_free $ec}
+		if [info exists fd ] {etclface::disconnect $fd}
 		return -code error $result
 	}
-	if [string is integer $fd] {
-		etclface::ec_free $ec
-		etclface::disconnect $fd
-		return
-	}
-	return -code error "etclface::connect did not return an integer ($fd)"
+	if {![string is integer $fd]} { return -code error "etclface::connect did not return an integer ($fd)" }
+	etclface::ec_free $ec
+	etclface::disconnect $fd
+	return
 }
 
 array set all_tests {connect_4 {etclface::connect with invalid timeout}}
@@ -147,12 +139,12 @@ proc connect_4 {} {
 	if [catch {	set ec [etclface::init $::mynode $::cookie]
 			set fd [etclface::connect $ec $::remnodename not_a_timeout]
 			} result] {
-		if [string match {expected integer but got *} $result] {
-			if [string match {ec0x*} $ec] { etclface::ec_free $ec }
-			return
-		}
+		if {[info exists ec]} { etclface::ec_free $ec }
+		if [string match {expected integer but got *} $result] { return }
 		return -code error $result
 	}
+	if [info exists ec ] {etclface::ec_free $ec}
+	if [info exists fd ] {etclface::disconnect $fd}
 	return -code error "etclface::connect with invalid timeout succeeded"
 }
 
@@ -162,7 +154,7 @@ proc xconnect_1 {} {
 		if [string match {wrong # args:*} $result] { return }
 		return -code error $result
 	}
-	return -code error {xconnect with no args succeeded}
+	return -code error "etclface::xconnect with no args succeeded"
 }
 
 array set all_tests {xconnect_2 {etclface::xconnect with no timeout}}
@@ -170,14 +162,16 @@ proc xconnect_2 {} {
 	if [catch {	set ec [etclface::init $::mynode $::cookie]
 			set fd [etclface::xconnect $ec $::remipaddr $::remnode]
 			} result] {
+		if [info exists ec] {etclface::ec_free $ec}
+		if [info exists fd] {etclface::disconnect $fd}
 		return -code error $result
 	}
-	if [string is integer $fd] {
-		etclface::ec_free $ec
-		etclface::disconnect $fd
-		return
+	etclface::ec_free $ec
+	etclface::disconnect $fd
+	if {![string is integer $fd]} {
+		return -code error "etclface::xconnect did not return an integer ($fd)"
 	}
-	return -code error "etclface::xconnect did not return an integer ($fd)"
+	return
 }
 
 array set all_tests {xconnect_3 {etclface::xconnect with timeout}}
@@ -185,14 +179,14 @@ proc xconnect_3 {} {
 	if [catch {	set ec [etclface::init $::mynode $::cookie]
 			set fd [etclface::xconnect $ec $::remipaddr $::remnode $::timeout]
 			} result] {
+		if [info exists ec] {etclface::ec_free $ec}
+		if [info exists fd] {etclface::disconnect $fd}
 		return -code error $result
 	}
-	if [string is integer $fd] {
-		etclface::ec_free $ec
-		etclface::disconnect $fd
-		return
-	}
-	return -code error "etclface::xconnect did not return an integer ($fd)"
+	if {![string is integer $fd]} { return -code error "etclface::xconnect did not return an integer ($fd)" }
+	etclface::ec_free $ec
+	etclface::disconnect $fd
+	return
 }
 
 array set all_tests {xconnect_4 {etclface::xconnect with invalid timeout}}
@@ -200,12 +194,13 @@ proc xconnect_4 {} {
 	if [catch {	set ec [etclface::init $::mynode $::cookie]
 			set fd [etclface::xconnect $ec $::remipaddr $::remnode not_a_timeout]
 			} result] {
-		if [string match {expected integer but got *} $result] {
-			if [string match {ec0x*} $ec] { etclface::ec_free $ec }
-			return
-		}
+		if [info exists ec] {etclface::ec_free $ec}
+		if [info exists fd] {etclface::disconnect $fd}
+		if [string match {expected integer but got *} $result] { return }
 		return -code error $result
 	}
+	etclface::ec_free $ec
+	etclface::disconnect $fd
 	return -code error "etclface::xconnect with invalid timeout succeeded"
 }
 
@@ -248,14 +243,19 @@ proc xbuff_4 {} {
 array set all_tests {xbuff_5 {etclface::xb_show with good argument}}
 proc xbuff_5 {} {
 	if [catch {	set xb [etclface::xb_new]
-			etclface::xb_free $xb
+			etclface::xb_show $xb
 			} result] {
+		if [info exists xb] {etclface::xb_free $xb}
 		return -code error $result
+	}
+	etclface::xb_free $xb
+	if {![string match {buff * buffsz * index *} $result]} {
+		return -code error "etclface::xb_show returned >$result<"
 	}
 	return
 }
 
-array set all_tests {xbuff_6 {etclface::xb_free with good argument}}
+array set all_tests {xbuff_6 {etclface::xb_free with bad argument}}
 proc xbuff_6 {} {
 	if [catch {etclface::xb_free a_bad_argument} result] {
 		if [string match {Invalid xb handle} $result] { return }
