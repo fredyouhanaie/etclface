@@ -177,7 +177,7 @@ dynamically, so it will need to be de-allocated when not needed.
 If the \.{cookie} parameter is missing, it will be obtained from
 \.{erlang.cookie} file in user's home directory.
 
-@*2\.{etclface::init nodename ?cookie?}.
+@ \.{etclface::init nodename ?cookie?}.
 
 Initialize and return a handle to an \.{ec} structure, with own name
 \.{nodename} and \.{cookie}.
@@ -214,7 +214,7 @@ Etclface_init(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 	return TCL_OK;
 }
 
-@*2\.{etclface::xinit host alive node ipaddr ?cookie?}.
+@ \.{etclface::xinit host alive node ipaddr ?cookie?}.
 
 Initialize and return a handle to an \.{ec} structure, with own name
 \.{nodename} and \.{cookie}.
@@ -278,7 +278,7 @@ If successful, both commands will return the socket file descriptor
 \.{fd}, which should be used for subsequent calls to various send/receive
 commands.
 
-@*2\.{etclface::connect ec nodename ?timeout?}.
+@ \.{etclface::connect ec nodename ?timeout?}.
 
 Establish a connection to node \.{nodename} using the \.{ec} handle
 obtained from \.{etclface::init} or \.{xinit}.
@@ -321,7 +321,7 @@ Etclface_connect(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 	return TCL_OK;
 }
 
-@*2\.{etclface::xconnect ec ipaddr alivename ?timeout?}.
+@ \.{etclface::xconnect ec ipaddr alivename ?timeout?}.
 
 Establish a connection to node \.{alivename@@ipaddr} using the \.{ec}
 handle obtained from \.{etclface::init} or \.{xinit}.
@@ -368,7 +368,7 @@ Etclface_xconnect(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[]
 	return TCL_OK;
 }
 
-@*2\.{etclface::disconnect fd}.
+@ \.{etclface::disconnect fd}.
 
 Closes the socket connection with \.{fd} file descriptor.
 
@@ -398,7 +398,7 @@ Etclface_disconnect(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv
 
 @*1Send Commands.
 
-@*2\.{reg\_send ec fd server xb}.
+@ \.{reg\_send ec fd server xb}.
 
 Send a message consisting of an Erlang term stored in \.{xb} to a
 registered process \.{server}, using the \.{ec} handle otained from
@@ -459,7 +459,7 @@ to an indefinite wait.
 Once a message is received successfully, the command will return the
 type of message received, along with the message, if relevant.
 
-@*2\.{etclface::receive fd ?timeout?}.
+@ \.{etclface::receive fd ?timeout?}.
 
 
 @<Receive commands@>=
@@ -568,7 +568,7 @@ are implemented, and of these we shall start with a limited main group.
 The \.{ei\_x\_encode\_*} functions encode the data into the
 \.{ei\_x\_buff} data structure.
 
-@*2\.{etclface::xb\_new ?-withversion?}.
+@ \.{etclface::xb\_new ?-withversion?}.
 
 Creates a new \.{ei\_x\_buff} structure and initializes the buffer
 using \.{ei\_x\_new()}, or optionally with an initial version byte using
@@ -611,7 +611,7 @@ Etclface_xb_new(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 	return TCL_OK;
 }
 
-@*2\.{etclface::xb\_free xb}.
+@ \.{etclface::xb\_free xb}.
 
 Free up memory taken up by \.{xb} as well as the internal buffer allocated
 to \.{xb}.
@@ -642,7 +642,7 @@ Etclface_xb_free(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 	return TCL_OK;
 }
 
-@*2\.{etclface::xb\_show xb}.
+@ \.{etclface::xb\_show xb}.
 
 Show the contents of the \.{xb} structure. This is mainly for debugging,
 or for those who are curious about the workings of the encode/decode
@@ -680,7 +680,7 @@ Etclface_xb_show(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 the most commonly used Erlang data types, then add more encode commands
 over time.
 
-@*2\.{etclface::encode\_atom xb atom}.
+@ \.{etclface::encode\_atom xb atom}.
 
 Takes an existing \.{ei\_x\_buff} and adds the string \.{atom} as an
 atom in binary format.
@@ -711,7 +711,7 @@ Etclface_encode_atom(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const obj
 	return TCL_OK;
 }
 
-@*2\.{etclface::encode\_boolean xb boolean}.
+@ \.{etclface::encode\_boolean xb boolean}.
 
 Takes an existing \.{ei\_x\_buff} and adds the boolean value to it.
 
@@ -745,7 +745,7 @@ Etclface_encode_boolean(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const 
 	return TCL_OK;
 }
 
-@*2\.{etclface::encode\_char xb char}.
+@ \.{etclface::encode\_char xb char}.
 
 Takes an existing \.{ei\_x\_buff} and adds the char value to it.
 
@@ -779,7 +779,7 @@ Etclface_encode_char(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const obj
 	return TCL_OK;
 }
 
-@*2\.{etclface::encode\_double xb double}.
+@ \.{etclface::encode\_double xb double}.
 
 Takes an existing \.{ei\_x\_buff} and adds the double value to it.
 
@@ -810,7 +810,7 @@ Etclface_encode_double(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const o
 	return TCL_OK;
 }
 
-@*2\.{etclface::encode\_long xb long}.
+@ \.{etclface::encode\_long xb long}.
 
 Takes an existing \.{ei\_x\_buff} and adds the long value to it.
 
@@ -841,7 +841,7 @@ Etclface_encode_long(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const obj
 	return TCL_OK;
 }
 
-@*2\.{etclface::encode\_string xb string}.
+@ \.{etclface::encode\_string xb string}.
 
 Takes an existing \.{ei\_x\_buff} and adds the string to it.
 
@@ -872,7 +872,7 @@ Etclface_encode_string(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const o
 	return TCL_OK;
 }
 
-@*2\.{etclface::encode\_list\_header xb arity}.
+@ \.{etclface::encode\_list\_header xb arity}.
 
 Initialize encoding of a list using \.{ei\_x\_encode\_list\_header()}.
 
@@ -908,7 +908,7 @@ Etclface_encode_list_header(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *co
 	return TCL_OK;
 }
 
-@*2\.{etclface::encode\_empty\_list xb}.
+@ \.{etclface::encode\_empty\_list xb}.
 
 Terminate the encoding of a list using \.{ei\_x\_encode\_empty\_list}.
 
@@ -936,7 +936,7 @@ Etclface_encode_empty_list(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *con
 	return TCL_OK;
 }
 
-@*2\.{etclface::encode\_tuple\_header xb arity}.
+@ \.{etclface::encode\_tuple\_header xb arity}.
 
 Initialize encoding of a tuple using \.{ei\_x\_encode\_tuple\_header()}.
 
@@ -972,7 +972,7 @@ Etclface_encode_tuple_header(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *c
 	return TCL_OK;
 }
 
-@*2\.{etclface::encode\_pid xb pid}.
+@ \.{etclface::encode\_pid xb pid}.
 
 Encode an \.{Erlang\_Pid} in the \.{ei\_x\_buff} structure.
 
@@ -1014,7 +1014,7 @@ Etclface_encode_pid(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv
 The decode commands implement the various \.{ei\_decode\_*} functions
 provided by \erliface.
 
-@*2\.{etclface::decode\_atom xb}.
+@ \.{etclface::decode\_atom xb}.
 
 @<Decode commands@>=
 static int
@@ -1043,7 +1043,7 @@ Etclface_decode_atom(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const obj
 	return TCL_OK;
 }
 
-@*2\.{etclface::decode\_long xb}.
+@ \.{etclface::decode\_long xb}.
 
 @<Decode commands@>=
 static int
@@ -1075,7 +1075,7 @@ Etclface_decode_long(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const obj
 @*1Utility Commands.
 These are various commands for accessing the \.{ei\_cnode} data structures.
 
-@*2\.{etclface::self ec}.
+@ \.{etclface::self ec}.
 
 Return the pid handle for the given \.{ei\_cnode}. The handle will
 be of the form \.{pid0x123456}, which can be used in subsequent
@@ -1104,7 +1104,7 @@ Etclface_self(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 	return TCL_OK;
 }
 
-@*2\.{etclface::nodename ec}.
+@ \.{etclface::nodename ec}.
 
 Return the node name of the cnode.
 
@@ -1128,7 +1128,7 @@ Etclface_nodename(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[]
 	return TCL_OK;
 }
 
-@*2\.{etclface::tracelevel ?level?}.
+@ \.{etclface::tracelevel ?level?}.
 
 Get or Set the trace level using the \.{ei\_get\_tracelevel()} and
 \.{ei\_set\_tracelevel()} functions. On its own, the command will return
@@ -1160,7 +1160,7 @@ Etclface_tracelevel(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv
 	return TCL_OK;
 }
 
-@*2\.{etclface::ec\_free ec}.
+@ \.{etclface::ec\_free ec}.
 
 Free the memory taken up by an \.{ei\_cnode} handle that has been created
 with \.{etclface::init} or \.{xinit}.
