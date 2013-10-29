@@ -114,6 +114,7 @@ static Tcl_ObjCmdProc Etclface_encode_string;
 static Tcl_ObjCmdProc Etclface_encode_tuple_header;
 static Tcl_ObjCmdProc Etclface_init;
 static Tcl_ObjCmdProc Etclface_nodename;
+static Tcl_ObjCmdProc Etclface_receive;
 static Tcl_ObjCmdProc Etclface_reg_send;
 static Tcl_ObjCmdProc Etclface_self;
 static Tcl_ObjCmdProc Etclface_tracelevel;
@@ -146,6 +147,7 @@ static EtclfaceCommand_t EtclfaceCommand[] = {@/
 	{"etclface::encode_tuple_header", Etclface_encode_tuple_header},@/
 	{"etclface::init", Etclface_init},@/
 	{"etclface::nodename", Etclface_nodename},@/
+	{"etclface::receive", Etclface_receive},@/
 	{"etclface::reg_send", Etclface_reg_send},@/
 	{"etclface::self", Etclface_self},@/
 	{"etclface::tracelevel", Etclface_tracelevel},@/
@@ -447,12 +449,108 @@ Etclface_reg_send(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[]
 
 @*1Receive Commands.
 
+\erliface provides many receive functions, however, here we only provide
+a single command to receive a message.
+
+The command expects the file descriptor (\.{fd}) of an existing connection
+on the command line, and an optional timeout value, which will default
+to an indefinite wait.
+
+Once a message is received successfully, the command will return the
+type of message received, along with the message, if relevant.
+
+@*2\.{etclface::receive fd ?timeout?}.
+
+
 @<Receive commands@>=
 static int
 Etclface_receive(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 {
+	int		fd, timeout;
+	erlang_msg	msg;
+	ei_x_buff	*xb;
+	char		*pidstr;
+
+	if ((objc!=2) && (objc!=3)) {
+		Tcl_WrongNumArgs(ti, 1, objv, "fd ?timeout?");
+		return TCL_ERROR;
+	}
+
+	if (Tcl_GetIntFromObj(ti, objv[1], &fd) == TCL_ERROR)
+		return TCL_ERROR;
+
+	if (objc == 2) {
+		timeout = 0;
+	} else {
+		if (get_timeout(ti, objv[2], &timeout) == TCL_ERROR)
+			return TCL_ERROR;
+	}
+
+	xb = (ei_x_buff *)Tcl_AttemptAlloc(sizeof(ei_x_buff));
+	if (xb == NULL) {
+		Tcl_SetObjResult(ti, Tcl_NewStringObj("Could not allocate memory for ei_x_buff", -1));
+		return TCL_ERROR;
+	}
+	if (ei_x_new(xb) < 0) {
+		Tcl_SetObjResult(ti, Tcl_NewStringObj("ei_x_new failed to initialize ei_x_buff", -1));
+		Tcl_Free((char *)xb);
+		return TCL_ERROR;
+	}
+
+	@<Receive message@>;
+	@<Unpack received message@>;
+
 	return TCL_OK;
 }
+
+@ Wait for message. We ignore ticks.
+
+@<Receive message@>=
+	int res;
+	while ((res = ei_xreceive_msg_tmo(fd, &msg, xb, timeout)) == ERL_TICK)
+		;
+
+	if (res == ERL_TIMEOUT) {
+		Tcl_SetObjResult(ti, Tcl_NewStringObj("Timed out", -1));
+		return TCL_ERROR;
+	}
+
+	if (res != ERL_MSG) {
+		char errstr[100];
+		sprintf(errstr, "ei_xreceive_msg_tmo failed (erl_errno=%d)", erl_errno);
+		Tcl_SetObjResult(ti, Tcl_NewStringObj(errstr, -1));
+		return TCL_ERROR;
+	}
+
+@ Check the received message.
+
+@<Unpack received message@>=
+	Tcl_Obj *msgdict = Tcl_NewDictObj();
+	Tcl_DictObjPut(ti, msgdict, Tcl_NewStringObj("msgtype", -1), Tcl_NewLongObj(msg.msgtype));
+
+	switch (msg.msgtype) {
+	case ERL_SEND:
+		if (pid2str(ti, msg.to, &pidstr) == TCL_ERROR)
+			return TCL_ERROR;
+		Tcl_DictObjPut(ti, msgdict, Tcl_NewStringObj("to", -1), Tcl_NewStringObj(pidstr, -1));
+		break;
+	case ERL_REG_SEND:
+		if (pid2str(ti, msg.from, &pidstr) == TCL_ERROR)
+			return TCL_ERROR;
+		Tcl_DictObjPut(ti, msgdict, Tcl_NewStringObj("from", -1), Tcl_NewStringObj(pidstr, -1));
+		break;
+	case ERL_LINK:
+	case ERL_UNLINK:
+	case ERL_EXIT:
+		if (pid2str(ti, msg.to, &pidstr) == TCL_ERROR)
+			return TCL_ERROR;
+		Tcl_DictObjPut(ti, msgdict, Tcl_NewStringObj("to", -1), Tcl_NewStringObj(pidstr, -1));
+		if (pid2str(ti, msg.from, &pidstr) == TCL_ERROR)
+			return TCL_ERROR;
+		Tcl_DictObjPut(ti, msgdict, Tcl_NewStringObj("from", -1), Tcl_NewStringObj(pidstr, -1));
+		break;
+	}
+	Tcl_SetObjResult(ti, msgdict);
 
 @*1Buffer Commands.
 
@@ -1165,4 +1263,25 @@ get_ipaddr(Tcl_Interp *ti, Tcl_Obj *tclobj, Erl_IpAddr *ipaddr) {
 	*ipaddr = (Erl_IpAddr)inaddr;
 	return TCL_OK;
 }
+
+@ \.{pid2str}. Convert an \.{erlang\_pid} structure to a string
+format. \.{pidstr} will point to the string allocated locally, it is
+up to the caller to free the space. The returned string will have the
+format \.{<a.b.c>}.
+
+@<Internal helper functions@>=
+static int
+pid2str(Tcl_Interp *ti, erlang_pid pid, char **pidstr) {
+	int pidstrlen = 3 * TCL_INTEGER_SPACE + 5;
+
+	char *str = Tcl_AttemptAlloc(pidstrlen);
+	if (str == NULL) {
+		Tcl_SetObjResult(ti, Tcl_NewStringObj("Could not allocate memory for pid", -1));
+		return TCL_ERROR;
+	}
+	sprintf(str, "<%d.%d.%d>", pid.num, pid.serial, pid.creation);
+	*pidstr = str;
+	return TCL_OK;
+}
+
 
