@@ -114,6 +114,7 @@ static Tcl_ObjCmdProc Etclface_encode_string;
 static Tcl_ObjCmdProc Etclface_encode_tuple_header;
 static Tcl_ObjCmdProc Etclface_init;
 static Tcl_ObjCmdProc Etclface_nodename;
+static Tcl_ObjCmdProc Etclface_pid_show;
 static Tcl_ObjCmdProc Etclface_receive;
 static Tcl_ObjCmdProc Etclface_reg_send;
 static Tcl_ObjCmdProc Etclface_self;
@@ -147,6 +148,7 @@ static EtclfaceCommand_t EtclfaceCommand[] = {@/
 	{"etclface::encode_tuple_header", Etclface_encode_tuple_header},@/
 	{"etclface::init", Etclface_init},@/
 	{"etclface::nodename", Etclface_nodename},@/
+	{"etclface::pid_show", Etclface_pid_show},@/
 	{"etclface::receive", Etclface_receive},@/
 	{"etclface::reg_send", Etclface_reg_send},@/
 	{"etclface::self", Etclface_self},@/
@@ -980,7 +982,6 @@ Encode an \.{Erlang\_Pid} in the \.{ei\_x\_buff} structure.
 static int
 Etclface_encode_pid(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 {
-	const char *pidhandle;
 	ei_x_buff  *xb;
 	erlang_pid *pid;
 
@@ -992,11 +993,8 @@ Etclface_encode_pid(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv
 	if (get_xb(ti, objv[1], &xb) == TCL_ERROR)
 		return TCL_ERROR;
 
-	pidhandle = Tcl_GetString(objv[2]);
-	if (sscanf(pidhandle, "pid%p", &pid) != 1) {
-		Tcl_SetObjResult(ti, Tcl_NewStringObj("Invalid pid handle", -1));
+	if (get_pid(ti, objv[2], &pid) == TCL_ERROR)
 		return TCL_ERROR;
-	}
 
 	if (ei_x_encode_pid(xb, pid) < 0) {
 		char errstr[100];
@@ -1074,6 +1072,31 @@ Etclface_decode_long(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const obj
 
 @*1Utility Commands.
 These are various commands for accessing the \.{ei\_cnode} data structures.
+
+@ \.{etclface::pid\_show pid}.
+
+Given a \.{pid} handle, return its contents as a dictionary.
+
+@<Utility commands@>=
+static int
+Etclface_pid_show(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+{
+	erlang_pid *pid;
+
+	if (objc != 2) {
+		Tcl_WrongNumArgs(ti, 1, objv, "pid");
+		return TCL_ERROR;
+	}
+
+	if (get_pid(ti, objv[1], &pid) == TCL_ERROR)
+		return TCL_ERROR;
+
+	Tcl_SetObjResult(ti, pid2dict(ti, pid));
+
+	return TCL_OK;
+}
+
+
 
 @ \.{etclface::self ec}.
 
@@ -1282,6 +1305,37 @@ pid2str(Tcl_Interp *ti, erlang_pid pid, char **pidstr) {
 	sprintf(str, "<%d.%d.%d>", pid.num, pid.serial, pid.creation);
 	*pidstr = str;
 	return TCL_OK;
+}
+
+@ \.{get\_pid}. Extract a pid handle from an object.
+
+@<Internal helper functions@>=
+static int
+get_pid(Tcl_Interp *ti, Tcl_Obj *tclobj, erlang_pid **pid)
+{
+	const char* pidhandle;
+	pidhandle = Tcl_GetString(tclobj);
+	if (sscanf(pidhandle, "pid%p", pid) != 1) {
+		Tcl_SetObjResult(ti, Tcl_NewStringObj("Invalid pid handle", -1));
+		return TCL_ERROR;
+	}
+
+	return TCL_OK;
+}
+
+@ \.{pid2dict}. Given a valid pid pointer, convert its contents to a dictionary.
+@<Internal helper functions@>=
+static Tcl_Obj*
+pid2dict(Tcl_Interp *ti, erlang_pid *pid) {
+	Tcl_Obj *piddict = Tcl_NewDictObj();
+
+	Tcl_DictObjPut(ti, piddict, Tcl_NewStringObj("node", -1), Tcl_NewStringObj(pid->node, -1));
+	Tcl_DictObjPut(ti, piddict, Tcl_NewStringObj("num", -1), Tcl_NewIntObj(pid->num));
+	Tcl_DictObjPut(ti, piddict, Tcl_NewStringObj("serial", -1), Tcl_NewIntObj(pid->serial));
+	Tcl_DictObjPut(ti, piddict, Tcl_NewStringObj("creation", -1), Tcl_NewIntObj(pid->creation));
+
+	return piddict;
+
 }
 
 

@@ -705,3 +705,33 @@ proc decode_atom_3 {} {
 	return
 }
 
+array set all_tests {pid_show_1 {pid_show with no arguments}}
+proc pid_show_1 {} {
+	if [catch { etclface::pid_show } result ] {
+		if [string match {wrong # args*} $result] { return }
+		return -code error $result
+	}
+	return -code error "etclface::pid_show without args succeeded!"
+}
+
+array set all_tests {pid_show_2 {pid_show with bad arguments}}
+proc pid_show_2 {} {
+	if [catch { etclface::pid_show not_a_pid } result ] {
+		if [string match {Invalid pid handle} $result] { return }
+		return -code error $result
+	}
+	return -code error "etclface::pid_show with bad pid succeeded!"
+}
+
+array set all_tests {pid_show_3 {pid_show with good arguments}}
+proc pid_show_3 {} {
+	if [catch {	set ec [etclface::init $::mynode]
+			etclface::pid_show [etclface::self $ec]
+			} result ] {
+		if [info exists ec] {etclface::ec_free $ec}
+		return -code error $result
+	}
+	etclface::ec_free $ec
+	return
+}
+
