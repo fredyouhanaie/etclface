@@ -471,7 +471,6 @@ Etclface_receive(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 	int		fd, timeout;
 	erlang_msg	msg;
 	ei_x_buff	*xb;
-	char		*pidstr;
 
 	if ((objc!=2) && (objc!=3)) {
 		Tcl_WrongNumArgs(ti, 1, objv, "fd ?timeout?");
@@ -532,24 +531,16 @@ Etclface_receive(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 
 	switch (msg.msgtype) {
 	case ERL_SEND:
-		if (pid2str(ti, msg.to, &pidstr) == TCL_ERROR)
-			return TCL_ERROR;
-		Tcl_DictObjPut(ti, msgdict, Tcl_NewStringObj("to", -1), Tcl_NewStringObj(pidstr, -1));
+		Tcl_DictObjPut(ti, msgdict, Tcl_NewStringObj("to", -1), pid2dict(ti, &msg.to));
 		break;
 	case ERL_REG_SEND:
-		if (pid2str(ti, msg.from, &pidstr) == TCL_ERROR)
-			return TCL_ERROR;
-		Tcl_DictObjPut(ti, msgdict, Tcl_NewStringObj("from", -1), Tcl_NewStringObj(pidstr, -1));
+		Tcl_DictObjPut(ti, msgdict, Tcl_NewStringObj("from", -1), pid2dict(ti, &msg.from));
 		break;
 	case ERL_LINK:
 	case ERL_UNLINK:
 	case ERL_EXIT:
-		if (pid2str(ti, msg.to, &pidstr) == TCL_ERROR)
-			return TCL_ERROR;
-		Tcl_DictObjPut(ti, msgdict, Tcl_NewStringObj("to", -1), Tcl_NewStringObj(pidstr, -1));
-		if (pid2str(ti, msg.from, &pidstr) == TCL_ERROR)
-			return TCL_ERROR;
-		Tcl_DictObjPut(ti, msgdict, Tcl_NewStringObj("from", -1), Tcl_NewStringObj(pidstr, -1));
+		Tcl_DictObjPut(ti, msgdict, Tcl_NewStringObj("to", -1), pid2dict(ti, &msg.to));
+		Tcl_DictObjPut(ti, msgdict, Tcl_NewStringObj("from", -1), pid2dict(ti, &msg.from));
 		break;
 	}
 	Tcl_SetObjResult(ti, msgdict);
@@ -1284,26 +1275,6 @@ get_ipaddr(Tcl_Interp *ti, Tcl_Obj *tclobj, Erl_IpAddr *ipaddr) {
 		return TCL_ERROR;
 	}
 	*ipaddr = (Erl_IpAddr)inaddr;
-	return TCL_OK;
-}
-
-@ \.{pid2str}. Convert an \.{erlang\_pid} structure to a string
-format. \.{pidstr} will point to the string allocated locally, it is
-up to the caller to free the space. The returned string will have the
-format \.{<a.b.c>}.
-
-@<Internal helper functions@>=
-static int
-pid2str(Tcl_Interp *ti, erlang_pid pid, char **pidstr) {
-	int pidstrlen = 3 * TCL_INTEGER_SPACE + 5;
-
-	char *str = Tcl_AttemptAlloc(pidstrlen);
-	if (str == NULL) {
-		Tcl_SetObjResult(ti, Tcl_NewStringObj("Could not allocate memory for pid", -1));
-		return TCL_ERROR;
-	}
-	sprintf(str, "<%d.%d.%d>", pid.num, pid.serial, pid.creation);
-	*pidstr = str;
 	return TCL_OK;
 }
 
