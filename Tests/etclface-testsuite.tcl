@@ -732,6 +732,46 @@ proc pid_show_3 {} {
 		return -code error $result
 	}
 	etclface::ec_free $ec
+	set pidkeys {creation node num serial}
+	set reskeys [lsort [dict keys $result]]
+	if {![string match $pidkeys $reskeys]} {
+		return -code error "unexpected pid dict: $result"
+	}
+	return
+}
+
+array set all_tests {ec_show_1 {ec_show with no arguments}}
+proc ec_show_1 {} {
+	if [catch { etclface::ec_show } result ] {
+		if [string match {wrong # args*} $result] { return }
+		return -code error $result
+	}
+	return -code error "etclface::ec_show without args succeeded!"
+}
+
+array set all_tests {ec_show_2 {ec_show with bad arguments}}
+proc ec_show_2 {} {
+	if [catch { etclface::ec_show a_bad_ec } result ] {
+		if [string match {Invalid ec handle} $result] { return }
+		return -code error $result
+	}
+	return -code error "etclface::ec_show with bad ec succeeded!"
+}
+
+array set all_tests {ec_show_3 {ec_show with good arguments}}
+proc ec_show_3 {} {
+	if [catch {	set ec [etclface::init $::mynode]
+			etclface::ec_show $ec
+			} result ] {
+		if [info exists ec] {etclface::ec_free $ec}
+		return -code error $result
+	}
+	etclface::ec_free $ec
+	set eckeys  {alivename cookie creation hostname nodename self}
+	set reskeys [lsort [dict keys $result]]
+	if {![string match $eckeys $reskeys]} {
+		return -code error "unexpected ec dict: $result"
+	}
 	return
 }
 

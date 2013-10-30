@@ -102,6 +102,7 @@ static Tcl_ObjCmdProc Etclface_decode_atom;
 static Tcl_ObjCmdProc Etclface_decode_long;
 static Tcl_ObjCmdProc Etclface_disconnect;
 static Tcl_ObjCmdProc Etclface_ec_free;
+static Tcl_ObjCmdProc Etclface_ec_show;
 static Tcl_ObjCmdProc Etclface_encode_atom;
 static Tcl_ObjCmdProc Etclface_encode_boolean;
 static Tcl_ObjCmdProc Etclface_encode_char;
@@ -136,6 +137,7 @@ static EtclfaceCommand_t EtclfaceCommand[] = {@/
 	{"etclface::decode_long", Etclface_decode_long},@/
 	{"etclface::disconnect", Etclface_disconnect},@/
 	{"etclface::ec_free", Etclface_ec_free},@/
+	{"etclface::ec_show", Etclface_ec_show},@/
 	{"etclface::encode_atom", Etclface_encode_atom},@/
 	{"etclface::encode_boolean", Etclface_encode_boolean},@/
 	{"etclface::encode_char", Etclface_encode_char},@/
@@ -1203,6 +1205,29 @@ Etclface_ec_free(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 	return TCL_OK;
 }
 
+@ \.{etclface::ec\_show ec}.
+
+Return the contents of an \.{ei\_cnode} as a dictionary.
+
+@<Utility commands@>=
+static int
+Etclface_ec_show(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+{
+	ei_cnode *ec;
+
+	if (objc != 2) {
+		Tcl_WrongNumArgs(ti, 1, objv, "ec");
+		return TCL_ERROR;
+	}
+
+	if (get_ec(ti, objv[1], &ec) == TCL_ERROR)
+		return TCL_ERROR;
+
+	Tcl_SetObjResult(ti, ec2dict(ti, ec));
+
+	return TCL_OK;
+}
+
 @*1Internal Helper Functions.
 
 These are a set of functions for internal consumption, they help avoid
@@ -1295,6 +1320,7 @@ get_pid(Tcl_Interp *ti, Tcl_Obj *tclobj, erlang_pid **pid)
 }
 
 @ \.{pid2dict}. Given a valid pid pointer, convert its contents to a dictionary.
+
 @<Internal helper functions@>=
 static Tcl_Obj*
 pid2dict(Tcl_Interp *ti, erlang_pid *pid) {
@@ -1306,7 +1332,22 @@ pid2dict(Tcl_Interp *ti, erlang_pid *pid) {
 	Tcl_DictObjPut(ti, piddict, Tcl_NewStringObj("creation", -1), Tcl_NewIntObj(pid->creation));
 
 	return piddict;
-
 }
 
+@ \.{ec2dict}. Given a valid ec pointer, convert its contents to a dictionary.
+
+@<Internal helper functions@>=
+static Tcl_Obj*
+ec2dict(Tcl_Interp *ti, ei_cnode *ec) {
+	Tcl_Obj *ecdict = Tcl_NewDictObj();
+
+	Tcl_DictObjPut(ti, ecdict, Tcl_NewStringObj("hostname", -1), Tcl_NewStringObj(ec->thishostname, -1));
+	Tcl_DictObjPut(ti, ecdict, Tcl_NewStringObj("nodename", -1), Tcl_NewStringObj(ec->thisnodename, -1));
+	Tcl_DictObjPut(ti, ecdict, Tcl_NewStringObj("alivename", -1), Tcl_NewStringObj(ec->thisalivename, -1));
+	Tcl_DictObjPut(ti, ecdict, Tcl_NewStringObj("cookie", -1), Tcl_NewStringObj(ec->ei_connect_cookie, -1));
+	Tcl_DictObjPut(ti, ecdict, Tcl_NewStringObj("creation", -1), Tcl_NewIntObj(ec->creation));
+	Tcl_DictObjPut(ti, ecdict, Tcl_NewStringObj("self", -1), pid2dict(ti, &ec->self));
+
+	return ecdict;
+}
 
