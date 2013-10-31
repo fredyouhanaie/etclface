@@ -207,7 +207,7 @@ proc xconnect_4 {} {
 array set all_tests {xbuff_1 {etclface::xb_new with bad arguments}}
 proc xbuff_1 {} {
 	if [catch { etclface::xb_new a_bad_argument } result ] {
-		if [string match {Only -withversion*} $result] { return }
+		if [string match {ETCLFACE ERROR Only -withversion*} $result] { return }
 		return -code error $result
 	}
 	return -code error "etclface:xb_new with bad arguments succeeded!"
@@ -234,7 +234,7 @@ proc xbuff_3 {} {
 array set all_tests {xbuff_4 {etclface::xb_show with bad argument}}
 proc xbuff_4 {} {
 	if [catch {etclface::xb_show a_bad_argument} result] {
-		if [string match {Invalid xb handle} $result] { return }
+		if [string match {ETCLFACE ERROR Invalid xb handle} $result] { return }
 		return -code error $result
 	}
 	return -code error "etclface:xb_show with bad argument succeeded!"
@@ -258,7 +258,7 @@ proc xbuff_5 {} {
 array set all_tests {xbuff_6 {etclface::xb_free with bad argument}}
 proc xbuff_6 {} {
 	if [catch {etclface::xb_free a_bad_argument} result] {
-		if [string match {Invalid xb handle} $result] { return }
+		if [string match {ETCLFACE ERROR Invalid xb handle} $result] { return }
 		return -code error $result
 	}
 	return -code error "etclface::xb_free with bad argument succeeded!"
@@ -333,7 +333,7 @@ proc encode_atom_1 {} {
 array set all_tests {encode_atom_2 {encode atom with bad arguments}}
 proc encode_atom_2 {} {
 	if [catch {etclface::encode_atom bad_xb hello} result] {
-		if [string match {Invalid xb handle*} $result] { return }
+		if [string match {ETCLFACE ERROR Invalid xb handle*} $result] { return }
 		return -code error $result
 	}
 	return -code error "etclface::encode_atom with bad args succeeded!"
@@ -395,7 +395,7 @@ proc encode_char_2 {} {
 	if [catch {	set xb [etclface::xb_new]
 			etclface::encode_char $xb abc
 			} result] {
-		if [string match {char must be a single*} $result] { return }
+		if [string match {ETCLFACE ERROR char must be a single*} $result] { return }
 		return -code error $result
 	}
 	return -code error "etclface::encode_char with bad args succeeded!"
@@ -517,7 +517,7 @@ proc encode_list_2 {} {
 			etclface::encode_list_header $xb -1
 			} result] {
 		if [info exists xb] {etclface::xb_free $xb}
-		if [string match {arity cannot be*} $result] { return }
+		if [string match {ETCLFACE ERROR arity cannot be*} $result] { return }
 		return -code error $result
 	}
 	return -code error "etclface::encode_list_header with bad args succeeded!"
@@ -571,7 +571,7 @@ proc encode_tuple_2 {} {
 			etclface::encode_tuple_header $xb -1
 			} result] {
 		if [info exists xb] {etclface::xb_free $xb}
-		if [string match {arity cannot be*} $result] { return }
+		if [string match {ETCLFACE ERROR arity cannot be*} $result] { return }
 		return -code error $result
 	}
 	if [info exists xb] {etclface::xb_free $xb}
@@ -605,7 +605,7 @@ proc encode_pid_2 {} {
 			etclface::encode_pid $xb not_a_pid
 			} result] {
 		if [info exists xb] {etclface::xb_free $xb}
-		if [string match {Invalid pid handle*} $result] { return }
+		if [string match {ETCLFACE ERROR Invalid pid handle*} $result] { return }
 		return -code error $result
 	}
 	etclface::xb_free $xb
@@ -641,7 +641,7 @@ proc decode_long_2 {} {
 	if [catch {	set xb [etclface::xb_new -withversion]
 			etclface::decode_long $xb
 			} result] {
-		if [string match {ei_decode_long failed*} $result] { return }
+		if [string match {ETCLFACE ERROR ei_decode_long failed*} $result] { return }
 		if [info exists xb] {etclface::xb_free $xb}
 		return -code error $result
 	}
@@ -680,7 +680,7 @@ proc decode_atom_2 {} {
 	if [catch {	set xb [etclface::xb_new -withversion]
 			etclface::decode_atom $xb
 			} result] {
-		if [string match {ei_decode_atom failed*} $result] { return }
+		if [string match {ETCLFACE ERROR ei_decode_atom failed*} $result] { return }
 		if [info exists xb] {etclface::xb_free $xb}
 		return -code error $result
 	}
@@ -717,7 +717,7 @@ proc pid_show_1 {} {
 array set all_tests {pid_show_2 {pid_show with bad arguments}}
 proc pid_show_2 {} {
 	if [catch { etclface::pid_show not_a_pid } result ] {
-		if [string match {Invalid pid handle} $result] { return }
+		if [string match {ETCLFACE ERROR Invalid pid handle} $result] { return }
 		return -code error $result
 	}
 	return -code error "etclface::pid_show with bad pid succeeded!"
@@ -752,7 +752,7 @@ proc ec_show_1 {} {
 array set all_tests {ec_show_2 {ec_show with bad arguments}}
 proc ec_show_2 {} {
 	if [catch { etclface::ec_show a_bad_ec } result ] {
-		if [string match {Invalid ec handle} $result] { return }
+		if [string match {ETCLFACE ERROR Invalid ec handle} $result] { return }
 		return -code error $result
 	}
 	return -code error "etclface::ec_show with bad ec succeeded!"
