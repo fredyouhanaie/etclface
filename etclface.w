@@ -39,7 +39,7 @@
 %%\parindent=0pt	%% NOTE parindent messes up the code indentation
 %%\parskip=1pt
 
-\def\title{etclface - Erlang/Tcl Interface}
+\def\title{etclface - An Erlang/Tcl Interface}
 \def\author{Fred Youhanaie}
 \def\version{(Version 0.1)}
 
@@ -71,8 +71,8 @@
 %% the following needs to be repeated for each set of new bullet points
 \count255=1
 
-\def\etf{\.{etclface}\,}
-\def\erliface{\.{erl\_interface}\,}
+\def\etf{\.{etclface}\ }
+\def\erliface{\.{erl\_interface}\ }
 
 %% To a C programmer NULL is more familiar than Lambda.
 @s NULL normal
@@ -107,6 +107,7 @@ between applications written in the two languages.
 
 The purpose of this extension is twofold:
 
+\count255=1
 \bul To allow Erlang processes to communicate with software written in
 Tcl/Tk, and
 
@@ -119,7 +120,37 @@ There are two sets of communication modules within \erliface, the
 old \.{erl\_*} ones and the newer \.{ei\_*} set. For \etf we are using the
 latter.
 
-@ Data Types.
+@ The programming language used in creating the extension is \.{cweb},
+which consists of standard \Cee\ code together with the annotations
+describing the code segments. This is known as Literate Programming. The
+web site \url{http://literateprogramming.com} is a good starting point
+for those not familiar with the concept.
+
+Literate Programming allows one to produce from a single source file
+a typeset documentation (this note) as well as a compilable \Cee\
+source code.
+
+@ Error Handling. All commands return \.{TCL\_OK} on success or
+\.{TCL\_ERROR} on failure. Tcl scripts can use the \.{catch} command
+to handle the error conditions. For all errors raised by \etf,
+the \.{errorCode} variable wil be set appropriately. In all cases,
+\.{errorCode} will be made up of three element list, "\.{ETCLFACE\ {\it
+code}\ {\it message}}". The first part distinguishes our errors from
+other Tcl errors, all \etf errors will have this prefix. The second part
+will be one of the error return codes from the \erliface library, such
+as \.{ERL\_ERROR}, \.{ERL\_TIMEOUT} etc, but without the \.{ERL\_} prefix.
+
+For example, if the \.{etclface::connect} command fails due to the
+\.{ei\_connect\_tmo()} failing, the Tcl variable \.{errorCode} may contain
+"\.{ETCLFACE\ ERROR\ \{5\ ei\_connect\_tmo\ failed\}}".
+
+In addition to \.{errorCode}, the variable \.{errorInfo} may also be
+set. This provides a more detailed explanation of the error condition
+intended to be read by people.
+
+More details can be found in the Tcl man pages for \.{tclvars} and \.{catch}.
+
+@*1Data Types and Data Structures.
 
 Tcl understands one data type only, character strings, although the
 underlying commands can interpret the character strings in different ways,
@@ -128,15 +159,30 @@ and one way of combining basic types, lists.
 Erlang, on the other hand, has several types, and the extension needs
 to be able to convert between the types appropriately.
 
-@ Components.
+@*1The Components.
 
-The basic interface is written in \Cee.
+The basic interface is written in \Cee. The source code can be found at
+the end of this document, see the section {\it The Source Code}.
 
-@ Installation. The build and installation is done using \.{cmake},
-see \url{http://cmake.org}.
+There will also be an additional library written in Tcl that will provide
+a higher level functionality, such as encoding and decoding of Erlang
+terms to and from Tcl data types, such as lists and dictionaries.
 
-@ Testing. There are two sets of test scripts, one for tests initiated
+@*1Installation. The software is available in source form and can be
+downloaded, or cloned, from github, see
+\url{https://github.com/fredyouhanaie/etclface}.
+
+The build and installation is done using \.{cmake}, see
+\url{http://cmake.org}.
+
+@*1Testing. There are two sets of test scripts, one for tests initiated
 from the Erlang side, and the other for tests run on the Tcl side.
+
+The tests on the Tcl side are based on the \.{tcltest} package are located
+in in the \.{Tests/} directory. The test cases are in individual Tcl
+procs within the \.{etclface-testsuite.tcl} file. These tests are run via
+the \.{run-testsuite.tcl} wrapper. The wrapper will run all the tests,
+unless a pattern of test names is supplied on the command line.
 
 @i etclface-code.w
 

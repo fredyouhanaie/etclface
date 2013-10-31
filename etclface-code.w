@@ -29,7 +29,7 @@
 %% NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 %% SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-@*The Code.
+@*The Source Code.
 
 The \etf commands are collected in a number of groups.
 
