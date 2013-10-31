@@ -192,7 +192,6 @@ Etclface_init(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 {
 	char		*nodename, *cookie;
 	ei_cnode	*ec;
-	char		echandle[100];
 
 	if ((objc!=2) && (objc!=3)) {
 		Tcl_WrongNumArgs(ti, 1, objv, "nodename ?cookie?");
@@ -213,8 +212,8 @@ Etclface_init(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 		return TCL_ERROR;
 	}
 
-	sprintf(echandle, "ec%p", ec);
-	Tcl_SetObjResult(ti, Tcl_NewStringObj(echandle, -1));
+	Tcl_SetObjResult(ti, Tcl_ObjPrintf("ec0x%x", ec));
+
 	return TCL_OK;
 }
 
@@ -230,7 +229,6 @@ Etclface_xinit(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 	char		*alive, *cookie, *host, *node;
 	Erl_IpAddr	ipaddr;
 	ei_cnode	*ec;
-	char		echandle[100];
 
 	if ((objc!=5) && (objc!=6)) {
 		Tcl_WrongNumArgs(ti, 1, objv, "host alive node ipaddr ?cookie?");
@@ -259,8 +257,8 @@ Etclface_xinit(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 		return TCL_ERROR;
 	}
 
-	sprintf(echandle, "ec%p", ec);
-	Tcl_SetObjResult(ti, Tcl_NewStringObj(echandle, -1));
+	Tcl_SetObjResult(ti, Tcl_ObjPrintf("ec0x%x", ec));
+
 	return TCL_OK;
 }
 
@@ -588,9 +586,7 @@ Etclface_xb_new(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 		return TCL_ERROR;
 	}
 
-	char xbhandle[100];
-	sprintf(xbhandle, "xb%p", xb);
-	Tcl_SetObjResult(ti, Tcl_NewStringObj(xbhandle, -1));
+	Tcl_SetObjResult(ti, Tcl_ObjPrintf("xb0x%x", xb));
 
 	return TCL_OK;
 }
@@ -638,8 +634,6 @@ is a pointer and the \.{d}s are integers. This lends itself to being parsed as a
 static int
 Etclface_xb_show(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 {
-	char result[100];
-
 	if (objc!=2) {
 		Tcl_WrongNumArgs(ti, 1, objv, "xb");
 		return TCL_ERROR;
@@ -649,8 +643,12 @@ Etclface_xb_show(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 	if (get_xb(ti, objv[1], &xb) == TCL_ERROR)
 		return TCL_ERROR;
 
-	sprintf(result, "buff %p buffsz %d index %d", xb->buff, xb->buffsz, xb->index);
-	Tcl_SetObjResult(ti, Tcl_NewStringObj(result, -1));
+	Tcl_Obj *xbdict = Tcl_NewDictObj();
+	Tcl_DictObjPut(ti, xbdict, Tcl_NewStringObj("buff", -1), Tcl_NewStringObj(xb->buff, -1));
+	Tcl_DictObjPut(ti, xbdict, Tcl_NewStringObj("buffsz", -1), Tcl_NewIntObj(xb->buffsz));
+	Tcl_DictObjPut(ti, xbdict, Tcl_NewStringObj("index", -1), Tcl_NewIntObj(xb->index));
+
+	Tcl_SetObjResult(ti, xbdict);
 
 	return TCL_OK;
 }
@@ -1077,13 +1075,9 @@ Etclface_self(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 	if (get_ec(ti, objv[1], &ec) == TCL_ERROR)
 		return TCL_ERROR;
 
-	erlang_pid *self;
-	self = ei_self(ec);
+	erlang_pid *self = ei_self(ec);
+	Tcl_SetObjResult(ti, Tcl_ObjPrintf("pid0x%x", self));
 
-	char pidhandle[100];
-	sprintf(pidhandle, "pid%p", self);
-
-	Tcl_SetObjResult(ti, Tcl_NewStringObj(pidhandle, -1));
 	return TCL_OK;
 }
 
