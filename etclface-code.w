@@ -307,7 +307,7 @@ Etclface_connect(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 
 	if (objc == 3) {
 		timeout = 0;
-	} else {
+	} @+else {
 		if (get_timeout(ti, objv[3], &timeout) == TCL_ERROR)
 			return TCL_ERROR;
 	}
@@ -355,7 +355,7 @@ Etclface_xconnect(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[]
 
 	if (objc == 4) {
 		timeout = 0;
-	} else {
+	} @+else {
 		if (get_timeout(ti, objv[4], &timeout) == TCL_ERROR)
 			return TCL_ERROR;
 	}
@@ -436,7 +436,7 @@ Etclface_reg_send(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[]
 	unsigned int timeout;
 	if (objc = 5) {
 		timeout = 0U;
-	} else {
+	} @+else {
 		if (get_timeout(ti, objv[5], &timeout) == TCL_ERROR)
 			return TCL_ERROR;
 	}
@@ -484,7 +484,7 @@ Etclface_receive(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 
 	if (objc == 2) {
 		timeout = 0;
-	} else {
+	} @+else {
 		if (get_timeout(ti, objv[2], &timeout) == TCL_ERROR)
 			return TCL_ERROR;
 	}
@@ -510,7 +510,7 @@ Etclface_receive(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 
 @<Receive message@>=
 	int res;
-	while ((res = ei_xreceive_msg_tmo(fd, &msg, xb, timeout)) == ERL_TICK)
+	while ((res = ei_xreceive_msg_tmo(fd, &msg, xb, timeout)) == ERL_TICK)@/
 		;
 
 	if (res == ERL_TIMEOUT) {
