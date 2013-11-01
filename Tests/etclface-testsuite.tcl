@@ -393,9 +393,9 @@ proc encode_char_1 {} {
 array set all_tests {encode_char_2 {encode char with bad arguments}}
 proc encode_char_2 {} {
 	if [catch {	set xb [etclface::xb_new]
-			etclface::encode_char $xb abc
+			etclface::encode_char $xb -200
 			} result] {
-		if [string match {ETCLFACE ERROR char must be a single*} $result] { return }
+		if [string match {ETCLFACE ERROR char must be a number *} $result] { return }
 		return -code error $result
 	}
 	return -code error "etclface::encode_char with bad args succeeded!"
@@ -404,7 +404,7 @@ proc encode_char_2 {} {
 array set all_tests {encode_char_3 {encode char with good args}}
 proc encode_char_3 {} {
 	if [catch {	set xb [etclface::xb_new]
-			etclface::encode_char $xb Z
+			etclface::encode_char $xb [scan {Z} {%c}]
 			} result] {
 		if [info exists xb] {etclface::xb_free $xb}
 		return -code error $result

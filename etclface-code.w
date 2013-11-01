@@ -100,6 +100,7 @@ typedef struct EtclfaceCommand_s {
 static Tcl_ObjCmdProc Etclface_connect;
 static Tcl_ObjCmdProc Etclface_decode_atom;
 static Tcl_ObjCmdProc Etclface_decode_boolean;
+static Tcl_ObjCmdProc Etclface_decode_char;
 static Tcl_ObjCmdProc Etclface_decode_long;
 static Tcl_ObjCmdProc Etclface_disconnect;
 static Tcl_ObjCmdProc Etclface_ec_free;
@@ -138,6 +139,7 @@ static EtclfaceCommand_t EtclfaceCommand[] = {@/
 	{"etclface::connect", Etclface_connect},@/
 	{"etclface::decode_atom", Etclface_decode_atom},@/
 	{"etclface::decode_boolean", Etclface_decode_boolean},@/
+	{"etclface::decode_char", Etclface_decode_char},@/
 	{"etclface::decode_long", Etclface_decode_long},@/
 	{"etclface::disconnect", Etclface_disconnect},@/
 	{"etclface::ec_free", Etclface_ec_free},@/
@@ -783,8 +785,8 @@ Takes an existing \.{ei\_x\_buff} and adds the char value to it.
 static int
 Etclface_encode_char(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 {
-	const char *chstr;
-	ei_x_buff *xb;
+	int		uchar;
+	ei_x_buff	*xb;
 
 	if (objc!=3) {
 		Tcl_WrongNumArgs(ti, 1, objv, "xb char");
@@ -794,13 +796,15 @@ Etclface_encode_char(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const obj
 	if (get_xb(ti, objv[1], &xb) == TCL_ERROR)
 		return TCL_ERROR;
 
-	chstr = Tcl_GetString(objv[2]);
-	if (strlen(chstr) != 1) {
-		ErrorReturn(ti, "ERROR", "char must be a single character", 0);
+	if (Tcl_GetIntFromObj(ti, objv[2], &uchar) == TCL_ERROR)
+		return TCL_ERROR;
+
+	if (uchar < 0 || uchar > 255) {
+		ErrorReturn(ti, "ERROR", "char must be a number in the range 0..255", 0);
 		return TCL_ERROR;
 	}
 
-	if (ei_x_encode_char(xb, chstr[0]) < 0) {
+	if (ei_x_encode_char(xb, uchar) < 0) {
 		ErrorReturn(ti, "ERROR", "ei_x_encode_char failed", 0);
 		return TCL_ERROR;
 	}
@@ -1085,6 +1089,34 @@ Etclface_decode_boolean(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const 
 	}
 
 	Tcl_SetObjResult(ti, Tcl_NewBooleanObj(boolean));
+	return TCL_OK;
+}
+
+
+@ \.{etclface::decode\_char xb}. Extract the next term from \.{xb}
+as a char, if successful, an integer is returned.
+
+@<Decode commands@>=
+static int
+Etclface_decode_char(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+{
+	ei_x_buff	*xb;
+	unsigned char	uchar;
+
+	if (objc != 2) {
+		Tcl_WrongNumArgs(ti, 1, objv, "xb");
+		return TCL_ERROR;
+	}
+
+	if (get_xb(ti, objv[1], &xb) == TCL_ERROR)
+		return TCL_ERROR;
+
+	if (ei_decode_char(xb->buff, &xb->index, &uchar) < 0) {
+		ErrorReturn(ti, "ERROR", "ei_decode_char failed", 0);
+		return TCL_ERROR;
+	}
+
+	Tcl_SetObjResult(ti, Tcl_NewIntObj(uchar));
 	return TCL_OK;
 }
 
