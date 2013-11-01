@@ -99,6 +99,7 @@ typedef struct EtclfaceCommand_s {
 @<Command declarations@>=
 static Tcl_ObjCmdProc Etclface_connect;
 static Tcl_ObjCmdProc Etclface_decode_atom;
+static Tcl_ObjCmdProc Etclface_decode_boolean;
 static Tcl_ObjCmdProc Etclface_decode_long;
 static Tcl_ObjCmdProc Etclface_disconnect;
 static Tcl_ObjCmdProc Etclface_ec_free;
@@ -122,7 +123,9 @@ static Tcl_ObjCmdProc Etclface_self;
 static Tcl_ObjCmdProc Etclface_tracelevel;
 static Tcl_ObjCmdProc Etclface_xb_free;
 static Tcl_ObjCmdProc Etclface_xb_new;
+static Tcl_ObjCmdProc Etclface_xb_reset;
 static Tcl_ObjCmdProc Etclface_xb_show;
+static Tcl_ObjCmdProc Etclface_xb_skip;
 static Tcl_ObjCmdProc Etclface_xconnect;
 static Tcl_ObjCmdProc Etclface_xinit;
 
@@ -134,6 +137,7 @@ alphabetical order. The last element must be a \.{\{NULL,NULL\}}
 static EtclfaceCommand_t EtclfaceCommand[] = {@/
 	{"etclface::connect", Etclface_connect},@/
 	{"etclface::decode_atom", Etclface_decode_atom},@/
+	{"etclface::decode_boolean", Etclface_decode_boolean},@/
 	{"etclface::decode_long", Etclface_decode_long},@/
 	{"etclface::disconnect", Etclface_disconnect},@/
 	{"etclface::ec_free", Etclface_ec_free},@/
@@ -157,7 +161,9 @@ static EtclfaceCommand_t EtclfaceCommand[] = {@/
 	{"etclface::tracelevel", Etclface_tracelevel},@/
 	{"etclface::xb_free", Etclface_xb_free},@/
 	{"etclface::xb_new", Etclface_xb_new},@/
+	{"etclface::xb_reset", Etclface_xb_reset},@/
 	{"etclface::xb_show", Etclface_xb_show},@/
+	{"etclface::xb_skip", Etclface_xb_skip},@/
 	{"etclface::xconnect", Etclface_xconnect},@/
 	{"etclface::xinit", Etclface_xinit},@/
 
@@ -644,11 +650,58 @@ Etclface_xb_show(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 		return TCL_ERROR;
 
 	Tcl_Obj *xbdict = Tcl_NewDictObj();
-	Tcl_DictObjPut(ti, xbdict, Tcl_NewStringObj("buff", -1), Tcl_NewStringObj(xb->buff, -1));
+	Tcl_DictObjPut(ti, xbdict, Tcl_NewStringObj("buff", -1), Tcl_ObjPrintf("0x%0x", xb->buff));
 	Tcl_DictObjPut(ti, xbdict, Tcl_NewStringObj("buffsz", -1), Tcl_NewIntObj(xb->buffsz));
 	Tcl_DictObjPut(ti, xbdict, Tcl_NewStringObj("index", -1), Tcl_NewIntObj(xb->index));
 
 	Tcl_SetObjResult(ti, xbdict);
+
+	return TCL_OK;
+}
+
+@ \.{etclface::xb\_reset xb}.
+
+Reset the index to the start of the buffer.
+
+@<Buffer commands@>=
+static int
+Etclface_xb_reset(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+{
+	if (objc!=2) {
+		Tcl_WrongNumArgs(ti, 1, objv, "xb");
+		return TCL_ERROR;
+	}
+
+	ei_x_buff *xb;
+	if (get_xb(ti, objv[1], &xb) == TCL_ERROR)
+		return TCL_ERROR;
+
+	xb->index = 0;
+
+	return TCL_OK;
+}
+
+@ \.{etclface::xb\_skip xb}.
+
+Move the index forward to point to the next term.
+
+@<Buffer commands@>=
+static int
+Etclface_xb_skip(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+{
+	if (objc!=2) {
+		Tcl_WrongNumArgs(ti, 1, objv, "xb");
+		return TCL_ERROR;
+	}
+
+	ei_x_buff *xb;
+	if (get_xb(ti, objv[1], &xb) == TCL_ERROR)
+		return TCL_ERROR;
+
+	if (ei_skip_term(xb->buff, &xb->index) < 0) {
+		ErrorReturn(ti, "ERROR", "ei_x_skip failed", 0);
+		return TCL_ERROR;
+	}
 
 	return TCL_OK;
 }
@@ -974,6 +1027,14 @@ Etclface_encode_pid(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv
 The decode commands implement the various \.{ei\_decode\_*} functions
 provided by \erliface.
 
+All the decode commands operate on an \.{ei\_x\_buff} and expect the
+\.{index} to point to the next term to be decoded. The commands,
+\.{xb\_reset} and \.{xb\_skip} can be used to position the index at the
+desired term.
+
+After a successful decode operation the index will be updated to point
+to the next term.
+
 @ \.{etclface::decode\_atom xb}.
 
 @<Decode commands@>=
@@ -981,7 +1042,6 @@ static int
 Etclface_decode_atom(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 {
 	ei_x_buff	*xb;
-	int		index=0;
 	char		atom[MAXATOMLEN+1];
 
 	if (objc != 2) {
@@ -992,12 +1052,39 @@ Etclface_decode_atom(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const obj
 	if (get_xb(ti, objv[1], &xb) == TCL_ERROR)
 		return TCL_ERROR;
 
-	if (ei_decode_atom(xb->buff, &index, atom) < 0) {
+	if (ei_decode_atom(xb->buff, &xb->index, atom) < 0) {
 		ErrorReturn(ti, "ERROR", "ei_decode_atom failed", 0);
 		return TCL_ERROR;
 	}
 
 	Tcl_SetObjResult(ti, Tcl_NewStringObj(atom, -1));
+	return TCL_OK;
+}
+
+@ \.{etclface::decode\_boolean xb}. Extract the next term from \.{xb}
+as a boolean, if successful, a \.{0} or \.{1} will be returned.
+
+@<Decode commands@>=
+static int
+Etclface_decode_boolean(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+{
+	ei_x_buff	*xb;
+	int		boolean;
+
+	if (objc != 2) {
+		Tcl_WrongNumArgs(ti, 1, objv, "xb");
+		return TCL_ERROR;
+	}
+
+	if (get_xb(ti, objv[1], &xb) == TCL_ERROR)
+		return TCL_ERROR;
+
+	if (ei_decode_boolean(xb->buff, &xb->index, &boolean) < 0) {
+		ErrorReturn(ti, "ERROR", "ei_decode_boolean failed", 0);
+		return TCL_ERROR;
+	}
+
+	Tcl_SetObjResult(ti, Tcl_NewBooleanObj(boolean));
 	return TCL_OK;
 }
 
@@ -1008,7 +1095,6 @@ static int
 Etclface_decode_long(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 {
 	ei_x_buff	*xb;
-	int		index=0;
 	long		longnum;
 
 	if (objc != 2) {
@@ -1019,7 +1105,7 @@ Etclface_decode_long(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const obj
 	if (get_xb(ti, objv[1], &xb) == TCL_ERROR)
 		return TCL_ERROR;
 
-	if (ei_decode_long(xb->buff, &index, &longnum) < 0) {
+	if (ei_decode_long(xb->buff, &xb->index, &longnum) < 0) {
 		ErrorReturn(ti, "ERROR", "ei_decode_long failed", 0);
 		return TCL_ERROR;
 	}
