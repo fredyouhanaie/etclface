@@ -639,6 +639,7 @@ proc decode_long_1 {} {
 array set all_tests {decode_long_2 {decode long with bad arguments}}
 proc decode_long_2 {} {
 	if [catch {	set xb [etclface::xb_new -withversion]
+			etclface::xb_reset $xb
 			etclface::decode_long $xb
 			} result] {
 		if [string match {ETCLFACE ERROR ei_decode_long failed*} $result] { return }
@@ -654,6 +655,7 @@ proc decode_long_3 {} {
 	set long_before 42
 	if [catch {	set xb [etclface::xb_new]
 			etclface::encode_long $xb $long_before
+			etclface::xb_reset $xb
 			set long_after [etclface::decode_long $xb]
 			} result] {
 		if [info exists xb] {etclface::xb_free $xb}
@@ -678,6 +680,7 @@ proc decode_atom_1 {} {
 array set all_tests {decode_atom_2 {decode atom with bad arguments}}
 proc decode_atom_2 {} {
 	if [catch {	set xb [etclface::xb_new -withversion]
+			etclface::xb_reset $xb
 			etclface::decode_atom $xb
 			} result] {
 		if [string match {ETCLFACE ERROR ei_decode_atom failed*} $result] { return }
@@ -693,6 +696,7 @@ proc decode_atom_3 {} {
 	set atom_before hello
 	if [catch {	set xb [etclface::xb_new]
 			etclface::encode_atom $xb $atom_before
+			etclface::xb_reset $xb
 			set atom_after [etclface::decode_atom $xb]
 			} result] {
 		if [info exists xb] {etclface::xb_free $xb}
