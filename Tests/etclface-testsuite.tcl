@@ -601,7 +601,7 @@ proc decode_double_2 {} {
 
 array set all_tests {decode_double_3 {etclface::decode_double with good arguments}}
 proc decode_double_3 {} {
-	set double_before 42
+	set double_before 3.1415
 	if [catch {	set xb [etclface::xb_new]
 			etclface::encode_double $xb $double_before
 			etclface::xb_reset $xb
@@ -648,6 +648,41 @@ proc decode_atom_3 {} {
 	etclface::xb_free $xb
 	if {$atom_before != $atom_after} {
 		return -code error "etclface::decode_atom returned $atom_after, expected $atom_before"
+	}
+	return
+}
+
+array set all_tests {decode_string_1 {etclface::decode_string with no arguments}}
+proc decode_string_1 {} { run_noargs etclface::decode_string }
+
+array set all_tests {decode_string_2 {etclface::decode_string with bad arguments}}
+proc decode_string_2 {} {
+	if [catch {	set xb [etclface::xb_new -withversion]
+			etclface::xb_reset $xb
+			etclface::decode_string $xb
+			} result] {
+		if [string match {ETCLFACE ERROR ei_decode_string failed*} $result] { return }
+		if [info exists xb] {etclface::xb_free $xb}
+		return -code error $result
+	}
+	etclface::xb_free $xb
+	return -code error "etclface::decode_string with bad args succeeded!"
+}
+
+array set all_tests {decode_string_3 {etclface::decode_string with good arguments}}
+proc decode_string_3 {} {
+	set string_before {hello world}
+	if [catch {	set xb [etclface::xb_new]
+			etclface::encode_string $xb $string_before
+			etclface::xb_reset $xb
+			set string_after [etclface::decode_string $xb]
+			} result] {
+		if [info exists xb] {etclface::xb_free $xb}
+		return -code error $result
+	}
+	etclface::xb_free $xb
+	if {$string_before != $string_after} {
+		return -code error "etclface::decode_string returned $string_after, expected $string_before"
 	}
 	return
 }

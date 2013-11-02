@@ -103,6 +103,7 @@ static Tcl_ObjCmdProc Etclface_decode_boolean;
 static Tcl_ObjCmdProc Etclface_decode_char;
 static Tcl_ObjCmdProc Etclface_decode_double;
 static Tcl_ObjCmdProc Etclface_decode_long;
+static Tcl_ObjCmdProc Etclface_decode_string;
 static Tcl_ObjCmdProc Etclface_disconnect;
 static Tcl_ObjCmdProc Etclface_ec_free;
 static Tcl_ObjCmdProc Etclface_ec_show;
@@ -143,6 +144,7 @@ static EtclfaceCommand_t EtclfaceCommand[] = {@/
 	{"etclface::decode_char", Etclface_decode_char},@/
 	{"etclface::decode_double", Etclface_decode_double},@/
 	{"etclface::decode_long", Etclface_decode_long},@/
+	{"etclface::decode_string", Etclface_decode_string},@/
 	{"etclface::disconnect", Etclface_disconnect},@/
 	{"etclface::ec_free", Etclface_ec_free},@/
 	{"etclface::ec_show", Etclface_ec_show},@/
@@ -1172,6 +1174,52 @@ Etclface_decode_long(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const obj
 	}
 
 	Tcl_SetObjResult(ti, Tcl_NewLongObj(longnum));
+	return TCL_OK;
+}
+
+@ \.{etclface::decode\_string xb}. Assuming that the next term in \.{xb}
+is a string, extract it and return as a string obj.
+
+Unfortunately we are expected to know the length of the string before
+hand, and supply {\it enough space} to receive a copy of the string.
+
+The only way to do so safely is to first decode the string with a \.{NULL}
+destination address, note the change in the index, then allocate space
+to receive the string based on the change in the index.
+
+@<Decode commands@>=
+static int
+Etclface_decode_string(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+{
+	ei_x_buff	*xb;
+	char		*str;
+	int		index;
+
+	if (objc != 2) {
+		Tcl_WrongNumArgs(ti, 1, objv, "xb");
+		return TCL_ERROR;
+	}
+
+	if (get_xb(ti, objv[1], &xb) == TCL_ERROR)
+		return TCL_ERROR;
+
+	index = xb->index;
+	if (ei_decode_string(xb->buff, &index, NULL) < 0) {
+		ErrorReturn(ti, "ERROR", "ei_decode_string failed", 0);
+		return TCL_ERROR;
+	}
+	str = Tcl_AttemptAlloc(1+index-xb->index);
+	if (str == NULL) {
+		ErrorReturn(ti, "ERROR", "Could not allocate memory for string", 0);
+		return TCL_ERROR;
+	}
+
+	if (ei_decode_string(xb->buff, &xb->index, str) < 0) {
+		ErrorReturn(ti, "ERROR", "ei_decode_string failed", 0);
+		return TCL_ERROR;
+	}
+
+	Tcl_SetObjResult(ti, Tcl_NewStringObj(str, -1));
 	return TCL_OK;
 }
 
