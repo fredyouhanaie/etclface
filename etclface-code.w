@@ -101,6 +101,7 @@ static Tcl_ObjCmdProc Etclface_connect;
 static Tcl_ObjCmdProc Etclface_decode_atom;
 static Tcl_ObjCmdProc Etclface_decode_boolean;
 static Tcl_ObjCmdProc Etclface_decode_char;
+static Tcl_ObjCmdProc Etclface_decode_double;
 static Tcl_ObjCmdProc Etclface_decode_long;
 static Tcl_ObjCmdProc Etclface_disconnect;
 static Tcl_ObjCmdProc Etclface_ec_free;
@@ -140,6 +141,7 @@ static EtclfaceCommand_t EtclfaceCommand[] = {@/
 	{"etclface::decode_atom", Etclface_decode_atom},@/
 	{"etclface::decode_boolean", Etclface_decode_boolean},@/
 	{"etclface::decode_char", Etclface_decode_char},@/
+	{"etclface::decode_double", Etclface_decode_double},@/
 	{"etclface::decode_long", Etclface_decode_long},@/
 	{"etclface::disconnect", Etclface_disconnect},@/
 	{"etclface::ec_free", Etclface_ec_free},@/
@@ -1092,7 +1094,6 @@ Etclface_decode_boolean(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const 
 	return TCL_OK;
 }
 
-
 @ \.{etclface::decode\_char xb}. Extract the next term from \.{xb}
 as a char, if successful, an integer is returned.
 
@@ -1117,6 +1118,34 @@ Etclface_decode_char(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const obj
 	}
 
 	Tcl_SetObjResult(ti, Tcl_NewIntObj(uchar));
+	return TCL_OK;
+}
+
+
+@ \.{etclface::decode\_double xb}. Extract the next term from \.{xb}
+as a double, if successful, a double is returned.
+
+@<Decode commands@>=
+static int
+Etclface_decode_double(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+{
+	ei_x_buff	*xb;
+	double		dbl;
+
+	if (objc != 2) {
+		Tcl_WrongNumArgs(ti, 1, objv, "xb");
+		return TCL_ERROR;
+	}
+
+	if (get_xb(ti, objv[1], &xb) == TCL_ERROR)
+		return TCL_ERROR;
+
+	if (ei_decode_double(xb->buff, &xb->index, &dbl) < 0) {
+		ErrorReturn(ti, "ERROR", "ei_decode_double failed", 0);
+		return TCL_ERROR;
+	}
+
+	Tcl_SetObjResult(ti, Tcl_NewDoubleObj(dbl));
 	return TCL_OK;
 }
 

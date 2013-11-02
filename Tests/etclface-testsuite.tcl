@@ -22,6 +22,17 @@ set remnodename	"erlnode@localhost"
 set remipaddr	127.0.0.1
 set remserver	server1
 
+#
+# run a command with no args
+#
+proc run_noargs {cmd} {
+	if [catch $cmd result] {
+		if [string match {wrong # args:*} $result] { return }
+		return -code error $result
+	}
+	return -code error "$cmd with no args succeeded"
+}
+
 # The array all_tests will be populated with test name/description
 # entries below:
 array set all_tests {}
@@ -36,15 +47,8 @@ proc error_report {result options} {
 	puts stderr "==================="
 }
 
-
 array set all_tests {init_1 {etclface::init without args}}
-proc init_1 {} {
-	if [catch { set ec [etclface::init] } result] {
-		if [string match {wrong # args:*} $result] { return }
-		return -code error $result
-	}
-	return -code error "etclface::init with no args succeeded"
-}
+proc init_1 {} { run_noargs etclface::init }
 
 array set all_tests {init_2 {etclface::init without cookie}}
 proc init_2 {} {
@@ -67,13 +71,7 @@ proc init_3 {} {
 }
 
 array set all_tests {xinit_1 {etclface::xinit without args}}
-proc xinit_1 {} {
-	if [catch { set ec [etclface::xinit] } result] {
-		if [string match {wrong # args:*} $result] { return }
-		return -code error $result
-	}
-	return -code error "etclface::xinit with no args succeeded"
-}
+proc xinit_1 {} { run_noargs etclface::xinit }
 
 array set all_tests {xinit_2 {etclface::xinit without cookie}}
 proc xinit_2 {} {
@@ -96,13 +94,7 @@ proc xinit_3 {} {
 }
 
 array set all_tests {connect_1 {etclface::connect without arguments}}
-proc connect_1 {} {
-	if [catch { etclface::connect } result] {
-		if [string match {wrong # args:*} $result] { return }
-		return -code error $result
-	}
-	return -code error "etclface::connect with no args succeeded"
-}
+proc connect_1 {} { run_noargs etclface::connect }
 
 array set all_tests {connect_2 {etclface::connect with no timeout}}
 proc connect_2 {} {
@@ -149,13 +141,7 @@ proc connect_4 {} {
 }
 
 array set all_tests {xconnect_1 {etclface::xconnect without arguments}}
-proc xconnect_1 {} {
-	if [catch { etclface::xconnect } result] {
-		if [string match {wrong # args:*} $result] { return }
-		return -code error $result
-	}
-	return -code error "etclface::xconnect with no args succeeded"
-}
+proc xconnect_1 {} { run_noargs etclface::xconnect }
 
 array set all_tests {xconnect_2 {etclface::xconnect with no timeout}}
 proc xconnect_2 {} {
@@ -206,11 +192,11 @@ proc xconnect_4 {} {
 
 array set all_tests {xbuff_1 {etclface::xb_new with bad arguments}}
 proc xbuff_1 {} {
-	if [catch { etclface::xb_new a_bad_argument } result ] {
+	if [catch { etclface::xb_new a_bad_argument } result] {
 		if [string match {ETCLFACE ERROR Only -withversion*} $result] { return }
 		return -code error $result
 	}
-	return -code error "etclface:xb_new with bad arguments succeeded!"
+	return -code error "etclface::xb_new with bad arguments succeeded!"
 }
 
 array set all_tests {xbuff_2 {etclface::xb_new no version}}
@@ -274,16 +260,10 @@ proc xbuff_7 {} {
 	return
 }
 
-array set all_tests {reg_send_1 {reg_send with wrong arguments}}
-proc reg_send_1 {} {
-	if [catch { etclface::reg_send } result] {
-		if [string match {wrong # args*} $result] { return }
-		return -code error $result
-	}
-	return -code error "etclface::reg_send with no argument succeeded!"
-}
+array set all_tests {reg_send_1 {etclface::reg_send with wrong arguments}}
+proc reg_send_1 {} { run_noargs etclface::reg_send }
 
-array set all_tests {reg_send_2 {reg_send without timeout}}
+array set all_tests {reg_send_2 {etclface::reg_send without timeout}}
 proc reg_send_2 {} {
 	if [catch {	set ec [etclface::init $::mynode $::cookie]
 			set fd [etclface::connect $ec $::remnodename]
@@ -302,7 +282,7 @@ proc reg_send_2 {} {
 	return
 }
 
-array set all_tests {reg_send_3 {reg_send with timeout}}
+array set all_tests {reg_send_3 {etclface::reg_send with timeout}}
 proc reg_send_3 {} {
 	if [catch {	set ec [etclface::init $::mynode $::cookie]
 			set fd [etclface::connect $ec $::remnodename]
@@ -321,16 +301,10 @@ proc reg_send_3 {} {
 	return
 }
 
-array set all_tests {encode_atom_1 {encode atom with wrong arguments}}
-proc encode_atom_1 {} {
-	if [catch {etclface::encode_atom} result] {
-		if [string match {wrong # args*} $result] { return }
-		return -code error $result
-	}
-	return -code error "etclface::encode_atom with no args succeeded!"
-}
+array set all_tests {encode_atom_1 {etclface::encode_atom with wrong arguments}}
+proc encode_atom_1 {} { run_noargs etclface::encode_atom }
 
-array set all_tests {encode_atom_2 {encode atom with bad arguments}}
+array set all_tests {encode_atom_2 {etclface::encode_atom with bad arguments}}
 proc encode_atom_2 {} {
 	if [catch {etclface::encode_atom bad_xb hello} result] {
 		if [string match {ETCLFACE ERROR Invalid xb handle*} $result] { return }
@@ -339,7 +313,7 @@ proc encode_atom_2 {} {
 	return -code error "etclface::encode_atom with bad args succeeded!"
 }
 
-array set all_tests {encode_atom_3 {encode atom success}}
+array set all_tests {encode_atom_3 {etclface::encode_atom success}}
 proc encode_atom_3 {} {
 	if [catch {	set xb [etclface::xb_new]
 			etclface::encode_atom $xb hello
@@ -350,16 +324,10 @@ proc encode_atom_3 {} {
 	return
 }
 
-array set all_tests {encode_boolean_1 {encode boolean with wrong arguments}}
-proc encode_boolean_1 {} {
-	if [catch {etclface::encode_boolean} result] {
-		if [string match {wrong # args*} $result] { return }
-		return -code error $result
-	}
-	return -code error "etclface::encode_boolean with no args succeeded!"
-}
+array set all_tests {encode_boolean_1 {etclface::encode_boolean with wrong arguments}}
+proc encode_boolean_1 {} { run_noargs etclface::encode_boolean }
 
-array set all_tests {encode_boolean_2 {encode boolean with bad arguments}}
+array set all_tests {encode_boolean_2 {etclface::encode_boolean with bad arguments}}
 proc encode_boolean_2 {} {
 	if [catch {	set xb [etclface::xb_new]
 			etclface::encode_boolean $xb positive
@@ -370,7 +338,7 @@ proc encode_boolean_2 {} {
 	return -code error "etclface::encode_boolean with bad args succeeded!"
 }
 
-array set all_tests {encode_boolean_3 {encode boolean with good arguments}}
+array set all_tests {encode_boolean_3 {etclface::encode_boolean with good arguments}}
 proc encode_boolean_3 {} {
 	if [catch {	set xb [etclface::xb_new]
 			etclface::encode_boolean $xb true
@@ -381,16 +349,10 @@ proc encode_boolean_3 {} {
 	return
 }
 
-array set all_tests {encode_char_1 {encode char with wrongs arguments}}
-proc encode_char_1 {} {
-	if [catch {etclface::encode_char} result] {
-		if [string match {wrong # args*} $result] { return }
-		return -code error $result
-	}
-	return -code error "etclface::encode_char with no args succeeded!"
-}
+array set all_tests {encode_char_1 {etclface::encode_char with wrongs arguments}}
+proc encode_char_1 {} { run_noargs etclface::encode_char }
 
-array set all_tests {encode_char_2 {encode char with bad arguments}}
+array set all_tests {encode_char_2 {etclface::encode_char with bad arguments}}
 proc encode_char_2 {} {
 	if [catch {	set xb [etclface::xb_new]
 			etclface::encode_char $xb -200
@@ -401,7 +363,7 @@ proc encode_char_2 {} {
 	return -code error "etclface::encode_char with bad args succeeded!"
 }
 
-array set all_tests {encode_char_3 {encode char with good args}}
+array set all_tests {encode_char_3 {etclface::encode_char with good args}}
 proc encode_char_3 {} {
 	if [catch {	set xb [etclface::xb_new]
 			etclface::encode_char $xb [scan {Z} {%c}]
@@ -413,16 +375,10 @@ proc encode_char_3 {} {
 	return
 }
 
-array set all_tests {encode_double_1 {encode double with wrong arguments}}
-proc encode_double_1 {} {
-	if [catch {etclface::encode_double} result] {
-		if [string match {wrong # args*} $result] { return }
-		return -code error $result
-	}
-	return -code error "etclface::encode_double with no args succeeded!"
-}
+array set all_tests {encode_double_1 {etclface::encode_double with wrong arguments}}
+proc encode_double_1 {} { run_noargs etclface::encode_double }
 
-array set all_tests {encode_double_2 {encode double with bad number}}
+array set all_tests {encode_double_2 {etclface::encode_double with bad number}}
 proc encode_double_2 {} {
 	if [catch {	set xb [etclface::xb_new]
 			etclface::encode_double $xb bad_number
@@ -435,7 +391,7 @@ proc encode_double_2 {} {
 	return -code error "etclface::encode_double with bad number succeeded!"
 }
 
-array set all_tests {encode_double_3 {encode double with good number}}
+array set all_tests {encode_double_3 {etclface::encode_double with good number}}
 proc encode_double_3 {} {
 	if [catch {	set xb [etclface::xb_new]
 			etclface::encode_double $xb 3.1415
@@ -447,16 +403,10 @@ proc encode_double_3 {} {
 	return
 }
 
-array set all_tests {encode_long_1 {encode long with wrong arguments}}
-proc encode_long_1 {} {
-	if [catch {etclface::encode_long} result] {
-		if [string match {wrong # args*} $result] { return }
-		return -code error $result
-	}
-	return -code error "etclface::encode_long with no args succeeded!"
-}
+array set all_tests {encode_long_1 {etclface::encode_long with wrong arguments}}
+proc encode_long_1 {} { run_noargs etclface::encode_long }
 
-array set all_tests {encode_long_2 {encode long with bad number}}
+array set all_tests {encode_long_2 {etclface::encode_long with bad number}}
 proc encode_long_2 {} {
 	if [catch {	set xb [etclface::xb_new]
 			etclface::encode_long $xb not_a_number
@@ -469,7 +419,7 @@ proc encode_long_2 {} {
 	return -code error "etclface::encode_long with bad args succeeded!"
 }
 
-array set all_tests {encode_long_3 {encode long with good number}}
+array set all_tests {encode_long_3 {etclface::encode_long with good number}}
 proc encode_long_3 {} {
 	if [catch {	set xb [etclface::xb_new]
 			etclface::encode_long $xb 42
@@ -481,16 +431,10 @@ proc encode_long_3 {} {
 	return
 }
 
-array set all_tests {encode_string_1 {encode string with wrong arguments}}
-proc encode_string_1 {} {
-	if [catch {etclface::encode_string} result] {
-		if [string match {wrong # args*} $result] { return }
-		return -code error $result
-	}
-	return -code error "etclface::encode_string with no args succeeded!"
-}
+array set all_tests {encode_string_1 {etclface::encode_string with wrong arguments}}
+proc encode_string_1 {} { run_noargs etclface::encode_string }
 
-array set all_tests {encode_string_2 {encode string with good arguments}}
+array set all_tests {encode_string_2 {etclface::encode_string with good arguments}}
 proc encode_string_2 {} {
 	if [catch {	set xb [etclface::xb_new]
 			etclface::encode_string $xb {how long is a piece of string?}
@@ -502,16 +446,10 @@ proc encode_string_2 {} {
 	return
 }
 
-array set all_tests {encode_list_1 {encode list with wrong arguments}}
-proc encode_list_1 {} {
-	if [catch {etclface::encode_list_header} result] {
-		if [string match {wrong # args*} $result] { return }
-		return -code error $result
-	}
-	return -code error "etclface::encode_list_header with no args succeeded!"
-}
+array set all_tests {encode_list_1 {etclface::encode_list_header with wrong arguments}}
+proc encode_list_1 {} { run_noargs etclface::encode_list_header }
 
-array set all_tests {encode_list_2 {encode list with bad arity}}
+array set all_tests {encode_list_2 {etclface::encode_list_header with bad arity}}
 proc encode_list_2 {} {
 	if [catch {	set xb [etclface::xb_new]
 			etclface::encode_list_header $xb -1
@@ -523,7 +461,7 @@ proc encode_list_2 {} {
 	return -code error "etclface::encode_list_header with bad args succeeded!"
 }
 
-array set all_tests {encode_list_3 {encode list with good arguments}}
+array set all_tests {encode_list_3 {etclface::encode_list_header with good arguments}}
 proc encode_list_3 {} {
 	if [catch {	set xb [etclface::xb_new]
 			etclface::encode_list_header $xb 2
@@ -535,16 +473,10 @@ proc encode_list_3 {} {
 	return
 }
 
-array set all_tests {encode_empty_list_1 {encode empty list with wrong arguments}}
-proc encode_empty_list_1 {} {
-	if [catch {etclface::encode_empty_list} result] {
-		if [string match {wrong # args*} $result] { return }
-		return -code error $result
-	}
-	return -code error "etclface::encode_empty_list with no args succeeded!"
-}
+array set all_tests {encode_empty_list_1 {etclface::encode_empty list with wrong arguments}}
+proc encode_empty_list_1 {} { run_noargs etclface::encode_empty_list }
 
-array set all_tests {encode_empty_list_2 {encode empty list with good arguments}}
+array set all_tests {encode_empty_list_2 {etclface::encode_empty list with good arguments}}
 proc encode_empty_list_2 {} {
 	if [catch {	set xb [etclface::xb_new]
 			etclface::encode_empty_list $xb
@@ -556,16 +488,10 @@ proc encode_empty_list_2 {} {
 	return
 }
 
-array set all_tests {encode_tuple_1 {encode tuple with wrong arguments}}
-proc encode_tuple_1 {} {
-	if [catch {etclface::encode_tuple_header} result] {
-		if [string match {wrong # args*} $result] { return }
-		return -code error $result
-	}
-	return -code error "etclface::encode_tuple_header with no args succeeded!"
-}
+array set all_tests {encode_tuple_1 {etclface::encode_tuple_header with wrong arguments}}
+proc encode_tuple_1 {} { run_noargs etclface::encode_tuple_header }
 
-array set all_tests {encode_tuple_2 {encode tuple with bad arguments}}
+array set all_tests {encode_tuple_2 {etclface::encode_tuple_header with bad arguments}}
 proc encode_tuple_2 {} {
 	if [catch {	set xb [etclface::xb_new]
 			etclface::encode_tuple_header $xb -1
@@ -578,7 +504,7 @@ proc encode_tuple_2 {} {
 	return -code error "etclface::encode_tuple_header with bad args succeeded!"
 }
 
-array set all_tests {encode_tuple_3 {encode tuple with good arguments}}
+array set all_tests {encode_tuple_3 {etclface::encode_tuple_header with good arguments}}
 proc encode_tuple_3 {} {
 	if [catch {	set xb [etclface::xb_new]
 			etclface::encode_tuple_header $xb 2
@@ -590,16 +516,10 @@ proc encode_tuple_3 {} {
 	return
 }
 
-array set all_tests {encode_pid_1 {encode pid with wrong arguments}}
-proc encode_pid_1 {} {
-	if [catch {etclface::encode_pid} result] {
-		if [string match {wrong # args*} $result] { return }
-		return -code error $result
-	}
-	return -code error "etclface::encode_pid with no args succeeded!"
-}
+array set all_tests {encode_pid_1 {etclface::encode_pid with wrong arguments}}
+proc encode_pid_1 {} { run_noargs etclface::encode_pid }
 
-array set all_tests {encode_pid_2 {encode pid with bad arguments}}
+array set all_tests {encode_pid_2 {etclface::encode_pid with bad arguments}}
 proc encode_pid_2 {} {
 	if [catch {	set xb [etclface::xb_new]
 			etclface::encode_pid $xb not_a_pid
@@ -612,7 +532,7 @@ proc encode_pid_2 {} {
 	return -code error "etclface::encode_pid with bad args succeeded!"
 }
 
-array set all_tests {encode_pid_3 {encode pid with good arguments}}
+array set all_tests {encode_pid_3 {etclface::encode_pid with good arguments}}
 proc encode_pid_3 {} {
 	if [catch {	set ec [etclface::init $::mynode]
 			set xb [etclface::xb_new]
@@ -627,16 +547,10 @@ proc encode_pid_3 {} {
 	return
 }
 
-array set all_tests {decode_long_1 {decode long with no arguments}}
-proc decode_long_1 {} {
-	if [catch {etclface::decode_long} result] {
-		if [string match {wrong # args*} $result] { return }
-		return -code error $result
-	}
-	return -code error "etclface::decode_long with no args succeeded!"
-}
+array set all_tests {decode_long_1 {etclface::decode_long with no arguments}}
+proc decode_long_1 {} { run_noargs etclface::decode_long }
 
-array set all_tests {decode_long_2 {decode long with bad arguments}}
+array set all_tests {decode_long_2 {etclface::decode_long with bad arguments}}
 proc decode_long_2 {} {
 	if [catch {	set xb [etclface::xb_new -withversion]
 			etclface::xb_reset $xb
@@ -650,7 +564,7 @@ proc decode_long_2 {} {
 	return -code error "etclface::decode_long with bad args succeeded!"
 }
 
-array set all_tests {decode_long_3 {decode long with good arguments}}
+array set all_tests {decode_long_3 {etclface::decode_long with good arguments}}
 proc decode_long_3 {} {
 	set long_before 42
 	if [catch {	set xb [etclface::xb_new]
@@ -668,16 +582,45 @@ proc decode_long_3 {} {
 	return
 }
 
-array set all_tests {decode_atom_1 {decode atom with no arguments}}
-proc decode_atom_1 {} {
-	if [catch {etclface::decode_atom} result] {
-		if [string match {wrong # args*} $result] { return }
+array set all_tests {decode_double_1 {etclface::decode_double with no arguments}}
+proc decode_double_1 {} { run_noargs etclface::decode_double }
+
+array set all_tests {decode_double_2 {etclface::decode_double with bad arguments}}
+proc decode_double_2 {} {
+	if [catch {	set xb [etclface::xb_new -withversion]
+			etclface::xb_reset $xb
+			etclface::decode_double $xb
+			} result] {
+		if [string match {ETCLFACE ERROR ei_decode_double failed*} $result] { return }
+		if [info exists xb] {etclface::xb_free $xb}
 		return -code error $result
 	}
-	return -code error "etclface::decode_atom with no args succeeded!"
+	etclface::xb_free $xb
+	return -code error "etclface::decode_double with bad args succeeded!"
 }
 
-array set all_tests {decode_atom_2 {decode atom with bad arguments}}
+array set all_tests {decode_double_3 {etclface::decode_double with good arguments}}
+proc decode_double_3 {} {
+	set double_before 42
+	if [catch {	set xb [etclface::xb_new]
+			etclface::encode_double $xb $double_before
+			etclface::xb_reset $xb
+			set double_after [etclface::decode_double $xb]
+			} result] {
+		if [info exists xb] {etclface::xb_free $xb}
+		return -code error $result
+	}
+	etclface::xb_free $xb
+	if {$double_before != $double_after} {
+		return -code error "etclface::decode_double returned $double_after, expected $double_before"
+	}
+	return
+}
+
+array set all_tests {decode_atom_1 {etclface::decode_atom with no arguments}}
+proc decode_atom_1 {} { run_noargs etclface::decode_atom }
+
+array set all_tests {decode_atom_2 {etclface::decode_atom with bad arguments}}
 proc decode_atom_2 {} {
 	if [catch {	set xb [etclface::xb_new -withversion]
 			etclface::xb_reset $xb
@@ -691,7 +634,7 @@ proc decode_atom_2 {} {
 	return -code error "etclface::decode_atom with bad args succeeded!"
 }
 
-array set all_tests {decode_atom_3 {decode atom with good arguments}}
+array set all_tests {decode_atom_3 {etclface::decode_atom with good arguments}}
 proc decode_atom_3 {} {
 	set atom_before hello
 	if [catch {	set xb [etclface::xb_new]
@@ -709,16 +652,10 @@ proc decode_atom_3 {} {
 	return
 }
 
-array set all_tests {pid_show_1 {pid_show with no arguments}}
-proc pid_show_1 {} {
-	if [catch { etclface::pid_show } result ] {
-		if [string match {wrong # args*} $result] { return }
-		return -code error $result
-	}
-	return -code error "etclface::pid_show without args succeeded!"
-}
+array set all_tests {pid_show_1 {etclface::pid_show with no arguments}}
+proc pid_show_1 {} { run_noargs etclface::pid_show }
 
-array set all_tests {pid_show_2 {pid_show with bad arguments}}
+array set all_tests {pid_show_2 {etclface::pid_show with bad arguments}}
 proc pid_show_2 {} {
 	if [catch { etclface::pid_show not_a_pid } result ] {
 		if [string match {ETCLFACE ERROR Invalid pid handle} $result] { return }
@@ -727,7 +664,7 @@ proc pid_show_2 {} {
 	return -code error "etclface::pid_show with bad pid succeeded!"
 }
 
-array set all_tests {pid_show_3 {pid_show with good arguments}}
+array set all_tests {pid_show_3 {etclface::pid_show with good arguments}}
 proc pid_show_3 {} {
 	if [catch {	set ec [etclface::init $::mynode]
 			etclface::pid_show [etclface::self $ec]
@@ -744,16 +681,10 @@ proc pid_show_3 {} {
 	return
 }
 
-array set all_tests {ec_show_1 {ec_show with no arguments}}
-proc ec_show_1 {} {
-	if [catch { etclface::ec_show } result ] {
-		if [string match {wrong # args*} $result] { return }
-		return -code error $result
-	}
-	return -code error "etclface::ec_show without args succeeded!"
-}
+array set all_tests {ec_show_1 {etclface::ec_show with no arguments}}
+proc ec_show_1 {} { run_noargs etclface::ec_show }
 
-array set all_tests {ec_show_2 {ec_show with bad arguments}}
+array set all_tests {ec_show_2 {etclface::ec_show with bad arguments}}
 proc ec_show_2 {} {
 	if [catch { etclface::ec_show a_bad_ec } result ] {
 		if [string match {ETCLFACE ERROR Invalid ec handle} $result] { return }
@@ -762,7 +693,7 @@ proc ec_show_2 {} {
 	return -code error "etclface::ec_show with bad ec succeeded!"
 }
 
-array set all_tests {ec_show_3 {ec_show with good arguments}}
+array set all_tests {ec_show_3 {etclface::ec_show with good arguments}}
 proc ec_show_3 {} {
 	if [catch {	set ec [etclface::init $::mynode]
 			etclface::ec_show $ec
@@ -778,4 +709,5 @@ proc ec_show_3 {} {
 	}
 	return
 }
+
 
