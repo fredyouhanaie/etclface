@@ -652,6 +652,49 @@ proc decode_atom_3 {} {
 	return
 }
 
+array set all_tests {decode_pid_1 {etclface::decode_pid with no arguments}}
+proc decode_pid_1 {} { run_noargs etclface::decode_pid }
+
+array set all_tests {decode_pid_2 {etclface::decode_pid with bad arguments}}
+proc decode_pid_2 {} {
+	if [catch {	set xb [etclface::xb_new -withversion]
+			etclface::xb_reset $xb
+			etclface::decode_pid $xb
+			} result] {
+		if [string match {ETCLFACE ERROR ei_decode_pid failed*} $result] { return }
+		if [info exists xb] {etclface::xb_free $xb}
+		return -code error $result
+	}
+	etclface::xb_free $xb
+	return -code error "etclface::decode_pid with bad args succeeded!"
+}
+
+array set all_tests {decode_pid_3 {etclface::decode_pid with good arguments}}
+proc decode_pid_3 {} {
+	if [catch {	set ec [etclface::init $::mynode]
+			set pid_before [etclface::self $ec]
+			set xb [etclface::xb_new]
+			etclface::encode_pid $xb $pid_before
+			etclface::xb_reset $xb
+			set pid_after [etclface::decode_pid $xb]
+			} result] {
+		if [info exists ec] {etclface::ec_free $ec}
+		if [info exists xb] {etclface::xb_free $xb}
+		return -code error $result
+	}
+	set pid_before_dict [etclface::pid_show $pid_before]
+	set pid_after_dict  [etclface::pid_show $pid_after]
+	etclface::ec_free $ec
+	etclface::xb_free $xb
+	dict for {key val} $pid_before_dict {
+		if {$val != [dict get $pid_after_dict $key]} {
+			return -code error \
+				"etclface::decode_pid returned $pid_after_dict, expected $pid_before_dict"
+		}
+	}
+	return
+}
+
 array set all_tests {decode_string_1 {etclface::decode_string with no arguments}}
 proc decode_string_1 {} { run_noargs etclface::decode_string }
 

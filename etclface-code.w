@@ -103,6 +103,7 @@ static Tcl_ObjCmdProc Etclface_decode_boolean;
 static Tcl_ObjCmdProc Etclface_decode_char;
 static Tcl_ObjCmdProc Etclface_decode_double;
 static Tcl_ObjCmdProc Etclface_decode_long;
+static Tcl_ObjCmdProc Etclface_decode_pid;
 static Tcl_ObjCmdProc Etclface_decode_string;
 static Tcl_ObjCmdProc Etclface_disconnect;
 static Tcl_ObjCmdProc Etclface_ec_free;
@@ -144,6 +145,7 @@ static EtclfaceCommand_t EtclfaceCommand[] = {@/
 	{"etclface::decode_char", Etclface_decode_char},@/
 	{"etclface::decode_double", Etclface_decode_double},@/
 	{"etclface::decode_long", Etclface_decode_long},@/
+	{"etclface::decode_pid", Etclface_decode_pid},@/
 	{"etclface::decode_string", Etclface_decode_string},@/
 	{"etclface::disconnect", Etclface_disconnect},@/
 	{"etclface::ec_free", Etclface_ec_free},@/
@@ -1174,6 +1176,40 @@ Etclface_decode_long(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const obj
 	}
 
 	Tcl_SetObjResult(ti, Tcl_NewLongObj(longnum));
+	return TCL_OK;
+}
+
+@ \.{etclface::decode\_pid xb}. Extract the next term in \.{xb} as a
+pid and, if succeessful, return a pid handle.
+
+@<Decode commands@>=
+static int
+Etclface_decode_pid(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+{
+	ei_x_buff	*xb;
+	erlang_pid	*pid;
+
+	if (objc != 2) {
+		Tcl_WrongNumArgs(ti, 1, objv, "xb");
+		return TCL_ERROR;
+	}
+
+	if (get_xb(ti, objv[1], &xb) == TCL_ERROR)
+		return TCL_ERROR;
+
+	pid = Tcl_AttemptAlloc(sizeof(erlang_pid));
+	if (pid == NULL) {
+		ErrorReturn(ti, "ERROR", "Could not allocate memory for pid", 0);
+		TCL_ERROR;
+	}
+
+	if (ei_decode_pid(xb->buff, &xb->index, pid) < 0) {
+		ErrorReturn(ti, "ERROR", "ei_decode_pid failed", 0);
+		return TCL_ERROR;
+	}
+
+	Tcl_SetObjResult(ti, Tcl_ObjPrintf("pid0x%x", pid));
+
 	return TCL_OK;
 }
 
