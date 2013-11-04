@@ -105,6 +105,7 @@ static Tcl_ObjCmdProc Etclface_decode_double;
 static Tcl_ObjCmdProc Etclface_decode_long;
 static Tcl_ObjCmdProc Etclface_decode_pid;
 static Tcl_ObjCmdProc Etclface_decode_string;
+static Tcl_ObjCmdProc Etclface_decode_version;
 static Tcl_ObjCmdProc Etclface_disconnect;
 static Tcl_ObjCmdProc Etclface_ec_free;
 static Tcl_ObjCmdProc Etclface_ec_show;
@@ -147,6 +148,7 @@ static EtclfaceCommand_t EtclfaceCommand[] = {@/
 	{"etclface::decode_long", Etclface_decode_long},@/
 	{"etclface::decode_pid", Etclface_decode_pid},@/
 	{"etclface::decode_string", Etclface_decode_string},@/
+	{"etclface::decode_version", Etclface_decode_version},@/
 	{"etclface::disconnect", Etclface_disconnect},@/
 	{"etclface::ec_free", Etclface_ec_free},@/
 	{"etclface::ec_show", Etclface_ec_show},@/
@@ -467,8 +469,10 @@ to an indefinite wait.
 Once a message is received successfully, the command will return the
 type of message received, along with the message, if relevant.
 
-@ \.{etclface::receive fd ?timeout?}.
+@ \.{etclface::receive fd xb ?timeout?}.
 
+Wait for a message. If receieved succeefully, put the message into an
+xbuff identified by \.{xb}.
 
 @<Receive commands@>=
 static int
@@ -478,30 +482,22 @@ Etclface_receive(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 	erlang_msg	msg;
 	ei_x_buff	*xb;
 
-	if ((objc!=2) && (objc!=3)) {
-		Tcl_WrongNumArgs(ti, 1, objv, "fd ?timeout?");
+	if ((objc!=3) && (objc!=4)) {
+		Tcl_WrongNumArgs(ti, 1, objv, "fd xb ?timeout?");
 		return TCL_ERROR;
 	}
 
 	if (Tcl_GetIntFromObj(ti, objv[1], &fd) == TCL_ERROR)
 		return TCL_ERROR;
 
-	if (objc == 2) {
+	if (get_xb(ti, objv[2], &xb) == TCL_ERROR)
+		return TCL_ERROR;
+
+	if (objc == 3) {
 		timeout = 0;
 	} @+else {
-		if (get_timeout(ti, objv[2], &timeout) == TCL_ERROR)
+		if (get_timeout(ti, objv[3], &timeout) == TCL_ERROR)
 			return TCL_ERROR;
-	}
-
-	xb = (ei_x_buff *)Tcl_AttemptAlloc(sizeof(ei_x_buff));
-	if (xb == NULL) {
-		ErrorReturn(ti, "ERROR", "Could not allocate memory for ei_x_buff", 0);
-		return TCL_ERROR;
-	}
-	if (ei_x_new(xb) < 0) {
-		ErrorReturn(ti, "ERROR", "ei_x_new failed to initialize ei_x_buff", 0);
-		Tcl_Free((char *)xb);
-		return TCL_ERROR;
 	}
 
 	@<Receive message@>;
@@ -1197,7 +1193,7 @@ Etclface_decode_pid(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv
 	if (get_xb(ti, objv[1], &xb) == TCL_ERROR)
 		return TCL_ERROR;
 
-	pid = Tcl_AttemptAlloc(sizeof(erlang_pid));
+	pid = (erlang_pid *)Tcl_AttemptAlloc(sizeof(erlang_pid));
 	if (pid == NULL) {
 		ErrorReturn(ti, "ERROR", "Could not allocate memory for pid", 0);
 		TCL_ERROR;
@@ -1256,6 +1252,36 @@ Etclface_decode_string(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const o
 	}
 
 	Tcl_SetObjResult(ti, Tcl_NewStringObj(str, -1));
+	return TCL_OK;
+}
+
+@ \.{etclface::decode\_version xb}.
+
+Extract the version encoded in the xbuff \.{xb}. We normally expect the
+version to be at the begining of the buffer.
+
+@<Decode commands@>=
+static int
+Etclface_decode_version(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+{
+	ei_x_buff	*xb;
+	int		version;
+
+	if (objc != 2) {
+		Tcl_WrongNumArgs(ti, 1, objv, "xb");
+		return TCL_ERROR;
+	}
+
+	if (get_xb(ti, objv[1], &xb) == TCL_ERROR)
+		return TCL_ERROR;
+
+	if (ei_decode_version(xb->buff, &xb->index, &version) < 0) {
+		ErrorReturn(ti, "ERROR", "ei_decode_version failed", 0);
+		return TCL_ERROR;
+	}
+
+	Tcl_SetObjResult(ti, Tcl_NewIntObj(version));
+
 	return TCL_OK;
 }
 
