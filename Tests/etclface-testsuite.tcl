@@ -3,7 +3,7 @@
 # etclface test suit.
 #
 
-package require etclface
+load libetclface.so
 
 set myname [info script]
 
