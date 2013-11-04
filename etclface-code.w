@@ -221,7 +221,7 @@ Etclface_init(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 		return TCL_ERROR;
 	}
 
-	if (ei_connect_init(ec, nodename, cookie, 0) == ERL_ERROR) {
+	if (ei_connect_init(ec, nodename, cookie, 0) < 0) {
 		ErrorReturn(ti, "ERROR", "ei_connect_init failed", erl_errno);
 		return TCL_ERROR;
 	}
@@ -266,7 +266,7 @@ Etclface_xinit(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 
 	int res = ei_connect_xinit(ec, host, alive, node, ipaddr, cookie, (short)0);
 	Tcl_Free((char *)ipaddr);
-	if (res == ERL_ERROR) {
+	if (res < 0) {
 		ErrorReturn(ti, "ERROR", "ei_connect_xinit failed", erl_errno);
 		return TCL_ERROR;
 	}
@@ -325,7 +325,7 @@ Etclface_connect(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 	}
 
 	int fd;
-	if ((fd = ei_connect_tmo(ec, nodename, timeout)) == ERL_ERROR) {
+	if ((fd = ei_connect_tmo(ec, nodename, timeout)) < 0) {
 		ErrorReturn(ti, "ERROR", "ei_connect_tmo failed", erl_errno);
 		return TCL_ERROR;
 	}
@@ -370,7 +370,7 @@ Etclface_xconnect(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[]
 			return TCL_ERROR;
 	}
 
-	if ((fd = ei_xconnect_tmo(ec, ipaddr, alivename, timeout))  == ERL_ERROR) {
+	if ((fd = ei_xconnect_tmo(ec, ipaddr, alivename, timeout))  < 0) {
 		ErrorReturn(ti, "ERROR", "ei_xconnect_tmo failed", erl_errno);
 		return TCL_ERROR;
 	}
@@ -443,7 +443,7 @@ Etclface_reg_send(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[]
 	if (objc = 5) {
 		timeout = 0U;
 	} @+else {
-		if (get_timeout(ti, objv[5], &timeout) == TCL_ERROR)
+		if (get_timeout(ti, objv[5], &timeout) < 0)
 			return TCL_ERROR;
 	}
 
@@ -498,7 +498,7 @@ Etclface_receive(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 		ErrorReturn(ti, "ERROR", "Could not allocate memory for ei_x_buff", 0);
 		return TCL_ERROR;
 	}
-	if (ei_x_new(xb) == ERL_ERROR) {
+	if (ei_x_new(xb) < 0) {
 		ErrorReturn(ti, "ERROR", "ei_x_new failed to initialize ei_x_buff", 0);
 		Tcl_Free((char *)xb);
 		return TCL_ERROR;
@@ -1439,8 +1439,7 @@ ErrorReturn(Tcl_Interp *ti, const char *errorcode, const char *errormsg, const i
 	Tcl_SetErrorCode(ti, "ETCLFACE", errorcode, errormsg, NULL);
 	Tcl_AppendResult(ti, "ETCLFACE ", errorcode, " ", errormsg, NULL);
 	if (errorno != 0) {
-		Tcl_AppendObjToErrorInfo(ti, Tcl_NewIntObj(errorno));
-		Tcl_AppendObjToErrorInfo(ti, Tcl_NewStringObj(Tcl_ErrnoMsg(errorno), -1));
+		Tcl_SetObjResult(ti, Tcl_ObjPrintf("[%d] %s", errorno, Tcl_ErrnoMsg(errorno)));
 	}
 	return;
 }
