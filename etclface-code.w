@@ -105,6 +105,7 @@ static Tcl_ObjCmdProc Etclface_decode_double;
 static Tcl_ObjCmdProc Etclface_decode_long;
 static Tcl_ObjCmdProc Etclface_decode_pid;
 static Tcl_ObjCmdProc Etclface_decode_string;
+static Tcl_ObjCmdProc Etclface_decode_term;
 static Tcl_ObjCmdProc Etclface_decode_version;
 static Tcl_ObjCmdProc Etclface_disconnect;
 static Tcl_ObjCmdProc Etclface_ec_free;
@@ -148,6 +149,7 @@ static EtclfaceCommand_t EtclfaceCommand[] = {@/
 	{"etclface::decode_long", Etclface_decode_long},@/
 	{"etclface::decode_pid", Etclface_decode_pid},@/
 	{"etclface::decode_string", Etclface_decode_string},@/
+	{"etclface::decode_term", Etclface_decode_term},@/
 	{"etclface::decode_version", Etclface_decode_version},@/
 	{"etclface::disconnect", Etclface_disconnect},@/
 	{"etclface::ec_free", Etclface_ec_free},@/
@@ -1254,6 +1256,114 @@ Etclface_decode_string(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const o
 	Tcl_SetObjResult(ti, Tcl_NewStringObj(str, -1));
 	return TCL_OK;
 }
+
+@ \.{etclface::decode\_term xb}.
+
+Extract the term encoded in the xbuff \.{xb}. The contents of the
+\.{term} structure returned by the function \.{ei\_decode\_ei\_term()}
+is converted to a dict and assigned to the return result. The contents
+of the dictionary will depend on the type of term.
+
+@<Decode commands@>=
+static int
+Etclface_decode_term(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+{
+	ei_x_buff	*xb;
+	ei_term		*term;
+
+	if (objc != 2) {
+		Tcl_WrongNumArgs(ti, 1, objv, "xb");
+		return TCL_ERROR;
+	}
+
+	if (get_xb(ti, objv[1], &xb) == TCL_ERROR)
+		return TCL_ERROR;
+
+	term = (ei_term *)Tcl_AttemptAlloc(sizeof(ei_term));
+	if (term == NULL) {
+		ErrorReturn(ti, "ERROR", "Could not allocate memory for ei_term", 0);
+		return TCL_ERROR;
+	}
+
+	int res = ei_decode_ei_term(xb->buff, &xb->index, term);
+	if (res < 0) {
+		ErrorReturn(ti, "ERROR", "ei_decode_term failed", 0);
+		return TCL_ERROR;
+	}
+
+	Tcl_Obj *termdict = Tcl_NewDictObj();
+	Tcl_DictObjPut(ti, termdict, Tcl_NewStringObj("type", -1), Tcl_NewStringObj(&term->ei_type, 1));
+
+	@<Decode the term@>;
+
+	Tcl_SetObjResult(ti, termdict);
+
+	return TCL_OK;
+
+}
+
+@ Decode a term returned in |term|. Depending on the type field, the
+|value|, |arity| or |size| keys will be added to the dictionary.
+
+If the term is an erlang pid, new storage will be allocated for the pid
+and a handle returned as the value.
+
+@<Decode the term@>=
+		Tcl_Obj		*valueobj = NULL;
+		erlang_pid	*pid;
+		switch (term->ei_type) {
+
+		case ERL_SMALL_INTEGER_EXT:
+		case ERL_INTEGER_EXT:@/
+			valueobj = Tcl_NewIntObj(term->value.i_val);
+			break;
+@#
+		case ERL_FLOAT_EXT:
+		case NEW_FLOAT_EXT:@/
+			valueobj = Tcl_NewDoubleObj(term->value.d_val);
+			break;
+@#
+		case ERL_ATOM_EXT:
+		case ERL_SMALL_ATOM_EXT:
+		case ERL_ATOM_UTF8_EXT:
+		case ERL_SMALL_ATOM_UTF8_EXT:@/
+			valueobj = Tcl_NewStringObj(term->value.atom_name, -1);
+			break;
+@#
+		case ERL_PID_EXT:@/
+			pid = (erlang_pid *)Tcl_AttemptAlloc(sizeof(erlang_pid));
+			if (pid == NULL) {
+				ErrorReturn(ti, "ERROR", "Could not allocate memory for pid", 0);
+				return TCL_ERROR;
+			}
+			memmove(pid, &term->value.pid, sizeof(erlang_pid));
+			valueobj = Tcl_ObjPrintf("pid0x%x", pid);
+			break;
+@#
+		case ERL_REFERENCE_EXT:
+		case ERL_NEW_REFERENCE_EXT:@/
+			valueobj = Tcl_NewStringObj("REF", -1);
+			break;
+@#
+		case ERL_PORT_EXT:@/
+			valueobj = Tcl_NewStringObj("PORT", -1);
+			break;
+@#
+		case ERL_SMALL_TUPLE_EXT:
+		case ERL_LARGE_TUPLE_EXT:
+		case ERL_LIST_EXT:
+		case ERL_NIL_EXT:@/
+			Tcl_DictObjPut(ti, termdict, Tcl_NewStringObj("arity", -1), Tcl_NewIntObj(term->arity));
+			break;
+@#
+		case ERL_STRING_EXT:
+		case ERL_BINARY_EXT:@/
+			Tcl_DictObjPut(ti, termdict, Tcl_NewStringObj("size", -1), Tcl_NewIntObj(term->size));
+@#
+		}
+		if (valueobj != NULL) {
+			Tcl_DictObjPut(ti, termdict, Tcl_NewStringObj("value", -1), valueobj);
+		}
 
 @ \.{etclface::decode\_version xb}.
 
