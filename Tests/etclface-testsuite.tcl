@@ -547,6 +547,41 @@ proc encode_pid_3 {} {
 	return
 }
 
+array set all_tests {decode_list_1 {etclface::decode_list with no arguments}}
+proc decode_list_1 {} { run_noargs etclface::decode_list }
+
+array set all_tests {decode_list_2 {etclface::decode_list with bad arguments}}
+proc decode_list_2 {} {
+	if [catch {	set xb [etclface::xb_new -withversion]
+			etclface::xb_reset $xb
+			etclface::decode_list $xb
+			} result] {
+		if [string match {ETCLFACE ERROR ei_decode_list_header failed*} $result] { return }
+		if [info exists xb] {etclface::xb_free $xb}
+		return -code error $result
+	}
+	etclface::xb_free $xb
+	return -code error "etclface::decode_list with bad args succeeded!"
+}
+
+array set all_tests {decode_list_3 {etclface::decode_list with good arguments}}
+proc decode_list_3 {} {
+	set arity_before 4
+	if [catch {	set xb [etclface::xb_new]
+			etclface::encode_list_header $xb $arity_before
+			etclface::xb_reset $xb
+			set arity_after [etclface::decode_list $xb]
+			} result] {
+		if [info exists xb] {etclface::xb_free $xb}
+		return -code error $result
+	}
+	etclface::xb_free $xb
+	if {$arity_before != $arity_after} {
+		return -code error "etclface::decode_list returned $arity_after, expected $arity_before"
+	}
+	return
+}
+
 array set all_tests {decode_long_1 {etclface::decode_long with no arguments}}
 proc decode_long_1 {} { run_noargs etclface::decode_long }
 

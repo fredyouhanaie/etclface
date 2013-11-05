@@ -102,6 +102,7 @@ static Tcl_ObjCmdProc Etclface_decode_atom;
 static Tcl_ObjCmdProc Etclface_decode_boolean;
 static Tcl_ObjCmdProc Etclface_decode_char;
 static Tcl_ObjCmdProc Etclface_decode_double;
+static Tcl_ObjCmdProc Etclface_decode_list;
 static Tcl_ObjCmdProc Etclface_decode_long;
 static Tcl_ObjCmdProc Etclface_decode_pid;
 static Tcl_ObjCmdProc Etclface_decode_string;
@@ -146,6 +147,7 @@ static EtclfaceCommand_t EtclfaceCommand[] = {@/
 	{"etclface::decode_boolean", Etclface_decode_boolean},@/
 	{"etclface::decode_char", Etclface_decode_char},@/
 	{"etclface::decode_double", Etclface_decode_double},@/
+	{"etclface::decode_list", Etclface_decode_list},@/
 	{"etclface::decode_long", Etclface_decode_long},@/
 	{"etclface::decode_pid", Etclface_decode_pid},@/
 	{"etclface::decode_string", Etclface_decode_string},@/
@@ -1150,6 +1152,36 @@ Etclface_decode_double(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const o
 	Tcl_SetObjResult(ti, Tcl_NewDoubleObj(dbl));
 	return TCL_OK;
 }
+
+@ \.{etclface::decode\_list xb}. Attempts to decode the list in \.{xb}. If
+successful, the arity of the list will be returned. It is then up to the
+caller to go through the terms of the list and decode them individually.
+
+@<Decode commands@>=
+static int
+Etclface_decode_list(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+{
+	ei_x_buff	*xb;
+	int		arity;
+
+	if (objc != 2) {
+		Tcl_WrongNumArgs(ti, 1, objv, "xb");
+		return TCL_ERROR;
+	}
+
+	if (get_xb(ti, objv[1], &xb) == TCL_ERROR)
+		return TCL_ERROR;
+
+	if (ei_decode_list_header(xb->buff, &xb->index, &arity) < 0) {
+		ErrorReturn(ti, "ERROR", "ei_decode_list_header failed", 0);
+		return TCL_ERROR;
+	}
+
+	Tcl_SetObjResult(ti, Tcl_NewIntObj(arity));
+
+	return TCL_OK;
+}
+
 
 @ \.{etclface::decode\_long xb}.
 
