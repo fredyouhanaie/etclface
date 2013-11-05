@@ -107,6 +107,7 @@ static Tcl_ObjCmdProc Etclface_decode_long;
 static Tcl_ObjCmdProc Etclface_decode_pid;
 static Tcl_ObjCmdProc Etclface_decode_string;
 static Tcl_ObjCmdProc Etclface_decode_term;
+static Tcl_ObjCmdProc Etclface_decode_tuple;
 static Tcl_ObjCmdProc Etclface_decode_version;
 static Tcl_ObjCmdProc Etclface_disconnect;
 static Tcl_ObjCmdProc Etclface_ec_free;
@@ -152,6 +153,7 @@ static EtclfaceCommand_t EtclfaceCommand[] = {@/
 	{"etclface::decode_pid", Etclface_decode_pid},@/
 	{"etclface::decode_string", Etclface_decode_string},@/
 	{"etclface::decode_term", Etclface_decode_term},@/
+	{"etclface::decode_tuple", Etclface_decode_tuple},@/
 	{"etclface::decode_version", Etclface_decode_version},@/
 	{"etclface::disconnect", Etclface_disconnect},@/
 	{"etclface::ec_free", Etclface_ec_free},@/
@@ -1182,7 +1184,6 @@ Etclface_decode_list(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const obj
 	return TCL_OK;
 }
 
-
 @ \.{etclface::decode\_long xb}.
 
 @<Decode commands@>=
@@ -1396,6 +1397,35 @@ and a handle returned as the value.
 		if (valueobj != NULL) {
 			Tcl_DictObjPut(ti, termdict, Tcl_NewStringObj("value", -1), valueobj);
 		}
+
+@ \.{etclface::decode\_tuple xb}. Attempts to decode the tuple in \.{xb}. If
+successful, the arity of the tuple will be returned. It is then up to the
+caller to go through the terms of the tuple and decode them individually.
+
+@<Decode commands@>=
+static int
+Etclface_decode_tuple(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+{
+	ei_x_buff	*xb;
+	int		arity;
+
+	if (objc != 2) {
+		Tcl_WrongNumArgs(ti, 1, objv, "xb");
+		return TCL_ERROR;
+	}
+
+	if (get_xb(ti, objv[1], &xb) == TCL_ERROR)
+		return TCL_ERROR;
+
+	if (ei_decode_tuple_header(xb->buff, &xb->index, &arity) < 0) {
+		ErrorReturn(ti, "ERROR", "ei_decode_tuple_header failed", 0);
+		return TCL_ERROR;
+	}
+
+	Tcl_SetObjResult(ti, Tcl_NewIntObj(arity));
+
+	return TCL_OK;
+}
 
 @ \.{etclface::decode\_version xb}.
 

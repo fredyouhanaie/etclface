@@ -765,6 +765,41 @@ proc decode_string_3 {} {
 	return
 }
 
+array set all_tests {decode_tuple_1 {etclface::decode_tuple with no arguments}}
+proc decode_tuple_1 {} { run_noargs etclface::decode_tuple }
+
+array set all_tests {decode_tuple_2 {etclface::decode_tuple with bad arguments}}
+proc decode_tuple_2 {} {
+	if [catch {	set xb [etclface::xb_new -withversion]
+			etclface::xb_reset $xb
+			etclface::decode_tuple $xb
+			} result] {
+		if [string match {ETCLFACE ERROR ei_decode_tuple_header failed*} $result] { return }
+		if [info exists xb] {etclface::xb_free $xb}
+		return -code error $result
+	}
+	etclface::xb_free $xb
+	return -code error "etclface::decode_tuple with bad args succeeded!"
+}
+
+array set all_tests {decode_tuple_3 {etclface::decode_tuple with good arguments}}
+proc decode_tuple_3 {} {
+	set arity_before 4
+	if [catch {	set xb [etclface::xb_new]
+			etclface::encode_tuple_header $xb $arity_before
+			etclface::xb_reset $xb
+			set arity_after [etclface::decode_tuple $xb]
+			} result] {
+		if [info exists xb] {etclface::xb_free $xb}
+		return -code error $result
+	}
+	etclface::xb_free $xb
+	if {$arity_before != $arity_after} {
+		return -code error "etclface::decode_tuple returned $arity_after, expected $arity_before"
+	}
+	return
+}
+
 array set all_tests {pid_show_1 {etclface::pid_show with no arguments}}
 proc pid_show_1 {} { run_noargs etclface::pid_show }
 
