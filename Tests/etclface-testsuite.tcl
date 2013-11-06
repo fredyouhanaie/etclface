@@ -301,6 +301,67 @@ proc reg_send_3 {} {
 	return
 }
 
+array set all_tests {send_1 {etclface::send with wrong arguments}}
+proc send_1 {} { run_noargs etclface::send }
+
+array set all_tests {send_2 {etclface::send without timeout}}
+proc send_2 {} {
+	if [catch {	set ec [etclface::init $::mynode $::cookie]
+			set fd [etclface::connect $ec $::remnodename]
+			set xb [etclface::xb_new -withversion]
+			etclface::encode_pid $xb [etclface::self $ec]
+			etclface::reg_send $ec $fd $::remserver $xb
+			etclface::xb_free $xb
+			set xb [etclface::xb_new]
+			etclface::receive $fd $xb
+			etclface::xb_reset $xb
+			catch {etclface::decode_version $xb}
+			set pid [etclface::decode_pid $xb]
+			etclface::xb_free $xb
+			set xb [etclface::xb_new -withversion]
+			etclface::encode_string $xb "hello again"
+			etclface::send $fd $pid $xb
+			} result] {
+		if [info exists ec] { etclface::ec_free $ec }
+		if [info exists fd] { etclface::disconnect $fd }
+		if [info exists xb] { etclface::xb_free $xb }
+		return -code error $result
+	}
+	etclface::ec_free $ec
+	etclface::disconnect $fd
+	etclface::xb_free $xb
+	return
+}
+
+array set all_tests {send_3 {etclface::send without timeout}}
+proc send_3 {} {
+	if [catch {	set ec [etclface::init $::mynode $::cookie]
+			set fd [etclface::connect $ec $::remnodename]
+			set xb [etclface::xb_new -withversion]
+			etclface::encode_pid $xb [etclface::self $ec]
+			etclface::reg_send $ec $fd $::remserver $xb
+			etclface::xb_free $xb
+			set xb [etclface::xb_new]
+			etclface::receive $fd $xb
+			etclface::xb_reset $xb
+			catch {etclface::decode_version $xb}
+			set pid [etclface::decode_pid $xb]
+			etclface::xb_free $xb
+			set xb [etclface::xb_new -withversion]
+			etclface::encode_string $xb "hello again"
+			etclface::send $fd $pid $xb $::timeout
+			} result] {
+		if [info exists ec] { etclface::ec_free $ec }
+		if [info exists fd] { etclface::disconnect $fd }
+		if [info exists xb] { etclface::xb_free $xb }
+		return -code error $result
+	}
+	etclface::ec_free $ec
+	etclface::disconnect $fd
+	etclface::xb_free $xb
+	return
+}
+
 array set all_tests {encode_atom_1 {etclface::encode_atom with wrong arguments}}
 proc encode_atom_1 {} { run_noargs etclface::encode_atom }
 

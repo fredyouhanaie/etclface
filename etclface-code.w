@@ -127,6 +127,7 @@ static Tcl_ObjCmdProc Etclface_nodename;
 static Tcl_ObjCmdProc Etclface_pid_show;
 static Tcl_ObjCmdProc Etclface_receive;
 static Tcl_ObjCmdProc Etclface_reg_send;
+static Tcl_ObjCmdProc Etclface_send;
 static Tcl_ObjCmdProc Etclface_self;
 static Tcl_ObjCmdProc Etclface_tracelevel;
 static Tcl_ObjCmdProc Etclface_xb_free;
@@ -173,6 +174,7 @@ static EtclfaceCommand_t EtclfaceCommand[] = {@/
 	{"etclface::pid_show", Etclface_pid_show},@/
 	{"etclface::receive", Etclface_receive},@/
 	{"etclface::reg_send", Etclface_reg_send},@/
+	{"etclface::send", Etclface_send},@/
 	{"etclface::self", Etclface_self},@/
 	{"etclface::tracelevel", Etclface_tracelevel},@/
 	{"etclface::xb_free", Etclface_xb_free},@/
@@ -416,7 +418,7 @@ Etclface_disconnect(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv
 
 @*1Send Commands.
 
-@ \.{reg\_send ec fd server xb}.
+@ \.{etclface::reg\_send ec fd server xb ?timeout?}.
 
 Send a message consisting of an Erlang term stored in \.{xb} to a
 registered process \.{server}, using the \.{ec} handle otained from
@@ -427,27 +429,28 @@ registered process \.{server}, using the \.{ec} handle otained from
 static int
 Etclface_reg_send(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 {
+	ei_cnode *ec;
+	int fd;
+	char *serverport;
+	unsigned int timeout;
+
 	if ((objc < 5) || (objc>6)) {
 		Tcl_WrongNumArgs(ti, 1, objv, "ec fd server xb ?timeout?");
 		return TCL_ERROR;
 	}
 
-	ei_cnode *ec;
 	if (get_ec(ti, objv[1], &ec) == TCL_ERROR)
 		return TCL_ERROR;
 
-	int fd;
 	if (Tcl_GetIntFromObj(ti, objv[2], &fd) == TCL_ERROR)
 		return TCL_ERROR;
 
-	char *serverport;
 	serverport = Tcl_GetString(objv[3]);
 
 	ei_x_buff *xb;
 	if (get_xb(ti, objv[4], &xb) == TCL_ERROR)
 		return TCL_ERROR;
 
-	unsigned int timeout;
 	if (objc = 5) {
 		timeout = 0U;
 	} @+else {
@@ -455,8 +458,52 @@ Etclface_reg_send(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[]
 			return TCL_ERROR;
 	}
 
-	if (ei_reg_send_tmo(ec, fd, serverport, xb->buff, xb->index, timeout) == ERL_ERROR) {
+	if (ei_reg_send_tmo(ec, fd, serverport, xb->buff, xb->index, timeout) < 0) {
 		ErrorReturn(ti, "ERROR", "ei_reg_send_tmo failed", erl_errno);
+		return TCL_ERROR;
+	}
+
+	return TCL_OK;
+}
+
+@ \.{etclface::send fd pid xb ?timeout?}.
+
+Send a message consisting of an Erlang term stored in \.{xb} to a process
+identified by \.{pid}, and \.{fd} obtained from \.{etclface::connect},
+or \.{etclface::xconnect}.
+
+@<Send commands@>=
+static int
+Etclface_send(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+{
+	int fd;
+	erlang_pid *pid;
+	unsigned int timeout;
+	ei_x_buff *xb;
+
+	if ((objc < 4) || (objc>5)) {
+		Tcl_WrongNumArgs(ti, 1, objv, "fd pid xb ?timeout?");
+		return TCL_ERROR;
+	}
+
+	if (Tcl_GetIntFromObj(ti, objv[1], &fd) == TCL_ERROR)
+		return TCL_ERROR;
+
+	if (get_pid(ti, objv[2], &pid) == TCL_ERROR)
+		return TCL_ERROR;
+
+	if (get_xb(ti, objv[3], &xb) == TCL_ERROR)
+		return TCL_ERROR;
+
+	if (objc = 4) {
+		timeout = 0U;
+	} @+else {
+		if (get_timeout(ti, objv[4], &timeout) < 0)
+			return TCL_ERROR;
+	}
+
+	if (ei_send_tmo(fd, pid, xb->buff, xb->index, timeout) < 0) {
+		ErrorReturn(ti, "ERROR", "ei_send_tmo failed", erl_errno);
 		return TCL_ERROR;
 	}
 
