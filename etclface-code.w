@@ -36,7 +36,10 @@ The \etf commands are collected in a number of groups.
 @c
 
 #include <string.h>
+#include <limits.h>
 #include <tcl.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 #include <erl_interface.h>
 #include <ei.h>
 
@@ -97,6 +100,7 @@ typedef struct EtclfaceCommand_s {
 @ We need to forward declare the functions first, in alphabetical order.
 
 @<Command declarations@>=
+static Tcl_ObjCmdProc Etclface_accept;
 static Tcl_ObjCmdProc Etclface_connect;
 static Tcl_ObjCmdProc Etclface_decode_atom;
 static Tcl_ObjCmdProc Etclface_decode_boolean;
@@ -123,12 +127,15 @@ static Tcl_ObjCmdProc Etclface_encode_pid;
 static Tcl_ObjCmdProc Etclface_encode_string;
 static Tcl_ObjCmdProc Etclface_encode_tuple_header;
 static Tcl_ObjCmdProc Etclface_init;
+static Tcl_ObjCmdProc Etclface_listen;
 static Tcl_ObjCmdProc Etclface_nodename;
 static Tcl_ObjCmdProc Etclface_pid_show;
 static Tcl_ObjCmdProc Etclface_receive;
+static Tcl_ObjCmdProc Etclface_publish;
 static Tcl_ObjCmdProc Etclface_reg_send;
 static Tcl_ObjCmdProc Etclface_send;
 static Tcl_ObjCmdProc Etclface_self;
+static Tcl_ObjCmdProc Etclface_socket;
 static Tcl_ObjCmdProc Etclface_tracelevel;
 static Tcl_ObjCmdProc Etclface_xb_free;
 static Tcl_ObjCmdProc Etclface_xb_new;
@@ -144,6 +151,7 @@ alphabetical order. The last element must be a \.{\{NULL,NULL\}}
 
 @<Command declarations@>=
 static EtclfaceCommand_t EtclfaceCommand[] = {@/
+	{"etclface::accept", Etclface_accept},@/
 	{"etclface::connect", Etclface_connect},@/
 	{"etclface::decode_atom", Etclface_decode_atom},@/
 	{"etclface::decode_boolean", Etclface_decode_boolean},@/
@@ -170,12 +178,15 @@ static EtclfaceCommand_t EtclfaceCommand[] = {@/
 	{"etclface::encode_string", Etclface_encode_string},@/
 	{"etclface::encode_tuple_header", Etclface_encode_tuple_header},@/
 	{"etclface::init", Etclface_init},@/
+	{"etclface::listen", Etclface_listen},@/
 	{"etclface::nodename", Etclface_nodename},@/
 	{"etclface::pid_show", Etclface_pid_show},@/
+	{"etclface::publish", Etclface_publish},@/
 	{"etclface::receive", Etclface_receive},@/
 	{"etclface::reg_send", Etclface_reg_send},@/
 	{"etclface::send", Etclface_send},@/
 	{"etclface::self", Etclface_self},@/
+	{"etclface::socket", Etclface_socket},@/
 	{"etclface::tracelevel", Etclface_tracelevel},@/
 	{"etclface::xb_free", Etclface_xb_free},@/
 	{"etclface::xb_new", Etclface_xb_new},@/
@@ -380,7 +391,7 @@ Etclface_xconnect(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[]
 			return TCL_ERROR;
 	}
 
-	if ((fd = ei_xconnect_tmo(ec, ipaddr, alivename, timeout))  < 0) {
+	if ((fd = ei_xconnect_tmo(ec, ipaddr, alivename, timeout)) < 0) {
 		ErrorReturn(ti, "ERROR", "ei_xconnect_tmo failed", erl_errno);
 		return TCL_ERROR;
 	}
@@ -412,6 +423,184 @@ Etclface_disconnect(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv
 		ErrorReturn(ti, "ERROR", "close failed", errno);
 		return TCL_ERROR;
 	}
+
+	return TCL_OK;
+}
+
+@ \.{etclface::socket addr port}.
+
+Create socket to listen on for connections from other nodes. The command
+will also bind to the socket ready to be listened on. If successful,
+the file descriptor for the socket will be returned.
+
+The command will not do any name translations for \.{addr} or \.{port}. It
+is left to the caller to do any translation needed, although, a named
+version of the command can be provided as part of the higher level \etf
+Tcl library.
+
+@<Connection commands@>=
+static int
+Etclface_socket(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+{
+	char			*host;
+	int			fd, port;
+	struct sockaddr_in	sinaddr;
+
+	if (objc != 3) {
+		Tcl_WrongNumArgs(ti, 1, objv, "host port");
+		return TCL_ERROR;
+	}
+
+	host = Tcl_GetString(objv[1]);
+	if (Tcl_GetIntFromObj(ti, objv[2], &port) == TCL_ERROR) {
+		return TCL_ERROR;
+	}
+	if ((port<0) || port > USHRT_MAX) {
+		ErrorReturn(ti, "ERROR", "Port number value is too high", 0);
+		return TCL_ERROR;
+	}
+
+	memset(&sinaddr, 0, sizeof(struct sockaddr_in));
+	sinaddr.sin_family = AF_INET;
+	if (strcmp(host, "-")) {
+		if (inet_aton(host, &sinaddr.sin_addr) == 0) {
+			ErrorReturn(ti, "ERROR", "Invalid address", 0);
+			return TCL_ERROR;
+		}
+	} @+else {
+		sinaddr.sin_addr.s_addr = INADDR_ANY;
+	}
+	sinaddr.sin_port = htons(port);
+
+	fd = socket(AF_INET, SOCK_STREAM, 0);
+	if (fd < 0) {
+		ErrorReturn(ti, "ERROR", "failed to get socket", errno);
+		return TCL_ERROR;
+	}
+
+	if (bind(fd, (struct sockaddr *)&sinaddr, sizeof(struct sockaddr)) < 0) {
+		close(fd);
+		ErrorReturn(ti, "ERROR", "failed to bind to socket", errno);
+		return TCL_ERROR;
+	}
+
+	Tcl_SetObjResult(ti, Tcl_NewIntObj(fd));
+
+	return TCL_OK;
+}
+
+@ \.{etclface::listen fd backlog}.
+
+Listen on a socket that has been set up with \.{etclface::socket}.
+
+@<Connection commands@>=
+static int
+Etclface_listen(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+{
+	int fd, backlog;
+
+	if (objc != 3) {
+		Tcl_WrongNumArgs(ti, 1, objv, "fd backlog");
+		return TCL_ERROR;
+	}
+
+	if (Tcl_GetIntFromObj(ti, objv[1], &fd) == TCL_ERROR)
+		return TCL_ERROR;
+
+	if (Tcl_GetIntFromObj(ti, objv[2], &backlog) == TCL_ERROR)
+		return TCL_ERROR;
+
+	if (listen(fd, backlog) < 0) {
+		ErrorReturn(ti, "ERROR", "failed to listen on socket", errno);
+		return TCL_ERROR;
+	}
+
+	return TCL_OK;
+}
+
+@ \.{etclface::publish ec port ?timeout?}.
+
+Register a port with epmd by calling \.{ei\_publish()}.
+
+@<Connection commands@>=
+static int
+Etclface_publish(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+{
+	ei_cnode	*ec;
+	int		port, timeout, fd;
+
+	if ((objc<3) || (objc>4)) {
+		Tcl_WrongNumArgs(ti, 1, objv, "ec port ?timeout?");
+		return TCL_ERROR;
+	}
+
+	if (get_ec(ti, objv[1], &ec) == TCL_ERROR)
+		return TCL_ERROR;
+
+	if (Tcl_GetIntFromObj(ti, objv[2], &port) == TCL_ERROR)
+		return TCL_ERROR;
+
+	if (objc == 3) {
+		timeout = 0;
+	} @+else {
+		if (get_timeout(ti, objv[3], &timeout) == TCL_ERROR)
+			return TCL_ERROR;
+	}
+
+	if ((fd=ei_publish_tmo(ec, port, timeout)) < 0) {
+		ErrorReturn(ti, "ERROR", "ei_publish failed", erl_errno);
+		return TCL_ERROR;
+	}
+
+	Tcl_SetObjResult(ti, Tcl_NewIntObj(fd));
+
+	return TCL_OK;
+}
+
+@ \.{etclface::accept ec fd ?timeout?}.
+
+Wait for and accept a connection from another erlang node. if successful,
+i.e. no error or timeout, then the contents of the \.{ErlConnect}
+structure is returned in the form of a dictionary.
+
+@<Connection commands@>=
+static int
+Etclface_accept(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+{
+	ei_cnode	*ec;
+	int		fd, timeout, newfd;
+	ErlConnect	econn;
+
+	if ((objc<3) || (objc>4)) {
+		Tcl_WrongNumArgs(ti, 1, objv, "ec fd ?timeout?");
+		return TCL_ERROR;
+	}
+
+	if (get_ec(ti, objv[1], &ec) == TCL_ERROR)
+		return TCL_ERROR;
+
+	if (Tcl_GetIntFromObj(ti, objv[2], &fd) == TCL_ERROR)
+		return TCL_ERROR;
+
+	if (objc == 3) {
+		timeout = 0;
+	} @+else {
+		if (get_timeout(ti, objv[3], &timeout) == TCL_ERROR)
+			return TCL_ERROR;
+	}
+
+	if ((newfd = ei_accept_tmo(ec, fd, &econn, timeout)) < 0) {
+		ErrorReturn(ti, "ERROR", "ei_accept failed", erl_errno);
+		return TCL_ERROR;
+	}
+
+	Tcl_Obj *dict = Tcl_NewDictObj();
+	Tcl_DictObjPut(ti, dict, Tcl_NewStringObj("fd", -1), Tcl_NewIntObj(newfd));
+	Tcl_DictObjPut(ti, dict, Tcl_NewStringObj("nodename", -1), Tcl_NewStringObj(econn.nodename,-1));
+	Tcl_DictObjPut(ti, dict, Tcl_NewStringObj("nodeaddr", -1),
+		Tcl_ObjPrintf("%d.%d.%d.%d", econn.ipadr[0], econn.ipadr[0], econn.ipadr[0], econn.ipadr[0]));
+
+	Tcl_SetObjResult(ti, dict);
 
 	return TCL_OK;
 }
