@@ -1791,7 +1791,7 @@ Etclface_tracelevel(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv
 	}
 
 	if (objc == 1) {
-		Tcl_SetObjResult(ti, Tcl_NewIntObj(level));
+		Tcl_SetObjResult(ti, Tcl_NewIntObj(ei_get_tracelevel()));
 		return TCL_OK;
 	}
 
