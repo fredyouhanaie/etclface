@@ -35,8 +35,10 @@ The \etf commands are collected in a number of groups.
 
 @c
 
+#include <stdlib.h>
 #include <string.h>
 #include <limits.h>
+#include <arpa/inet.h>
 #include <tcl.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -130,15 +132,16 @@ static Tcl_ObjCmdProc Etclface_init;
 static Tcl_ObjCmdProc Etclface_listen;
 static Tcl_ObjCmdProc Etclface_nodename;
 static Tcl_ObjCmdProc Etclface_pid_show;
-static Tcl_ObjCmdProc Etclface_receive;
 static Tcl_ObjCmdProc Etclface_publish;
+static Tcl_ObjCmdProc Etclface_receive;
 static Tcl_ObjCmdProc Etclface_reg_send;
-static Tcl_ObjCmdProc Etclface_send;
 static Tcl_ObjCmdProc Etclface_self;
+static Tcl_ObjCmdProc Etclface_send;
 static Tcl_ObjCmdProc Etclface_socket;
 static Tcl_ObjCmdProc Etclface_tracelevel;
 static Tcl_ObjCmdProc Etclface_xb_free;
 static Tcl_ObjCmdProc Etclface_xb_new;
+static Tcl_ObjCmdProc Etclface_xb_print;
 static Tcl_ObjCmdProc Etclface_xb_reset;
 static Tcl_ObjCmdProc Etclface_xb_show;
 static Tcl_ObjCmdProc Etclface_xb_skip;
@@ -184,12 +187,13 @@ static EtclfaceCommand_t EtclfaceCommand[] = {@/
 	{"etclface::publish", Etclface_publish},@/
 	{"etclface::receive", Etclface_receive},@/
 	{"etclface::reg_send", Etclface_reg_send},@/
-	{"etclface::send", Etclface_send},@/
 	{"etclface::self", Etclface_self},@/
+	{"etclface::send", Etclface_send},@/
 	{"etclface::socket", Etclface_socket},@/
 	{"etclface::tracelevel", Etclface_tracelevel},@/
 	{"etclface::xb_free", Etclface_xb_free},@/
 	{"etclface::xb_new", Etclface_xb_new},@/
+	{"etclface::xb_print", Etclface_xb_print},@/
 	{"etclface::xb_reset", Etclface_xb_reset},@/
 	{"etclface::xb_show", Etclface_xb_show},@/
 	{"etclface::xb_skip", Etclface_xb_skip},@/
@@ -599,7 +603,7 @@ Etclface_accept(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 	Tcl_DictObjPut(ti, dict, Tcl_NewStringObj("fd", -1), Tcl_NewIntObj(newfd));
 	Tcl_DictObjPut(ti, dict, Tcl_NewStringObj("nodename", -1), Tcl_NewStringObj(econn.nodename,-1));
 	memcpy(&addr, econn.ipadr, sizeof(addr));
-	Tcl_DictObjPut(ti, dict, Tcl_NewStringObj("nodeaddr", -1), Tcl_NewStringObj(inet_ntoa((addr)), -1));
+	Tcl_DictObjPut(ti, dict, Tcl_NewStringObj("nodeaddr", -1), Tcl_NewStringObj(inet_ntoa(addr), -1));
 
 	Tcl_SetObjResult(ti, dict);
 
@@ -902,6 +906,47 @@ Etclface_xb_show(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 	Tcl_DictObjPut(ti, xbdict, Tcl_NewStringObj("index", -1), Tcl_NewIntObj(xb->index));
 
 	Tcl_SetObjResult(ti, xbdict);
+
+	return TCL_OK;
+}
+
+@ \.{etclface::xb\_print xb}.
+
+Print the term in \.{xb} in human readable form. If successful, the
+contents of the term will be returned in the form familiar to the Erlang
+folk, but it is not readily parsable in Tcl.
+
+We normally use \.{Tcl\_AttemptAlloc} to allocate dynamic memory, however,
+in here we use malloc and free instead, since \.{ei\_s\_print\_term()}
+may use \.{realloc} if needed.
+
+@<Buffer commands@>=
+static int
+Etclface_xb_print(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+{
+	ei_x_buff *xb;
+	char *buff = NULL;
+
+	if (objc!=2) {
+		Tcl_WrongNumArgs(ti, 1, objv, "xb");
+		return TCL_ERROR;
+	}
+
+	if (get_xb(ti, objv[1], &xb) == TCL_ERROR)
+		return TCL_ERROR;
+
+	if ((buff = malloc(BUFSIZ)) == NULL) {
+		ErrorReturn(ti, "ERROR", "could not allocate memory for buffer", 0);
+		return TCL_ERROR;
+	}
+
+	if (ei_s_print_term(&buff, xb->buff, &xb->index) < 0) {
+		ErrorReturn(ti, "ERROR", "xb does not contain a valid term", 0);
+		return TCL_ERROR;
+	}
+
+	Tcl_SetObjResult(ti, Tcl_NewStringObj(buff, -1));
+	free(buff); // OK to free since buff has been copied
 
 	return TCL_OK;
 }
