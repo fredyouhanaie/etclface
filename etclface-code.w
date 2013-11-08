@@ -570,6 +570,7 @@ Etclface_accept(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 	ei_cnode	*ec;
 	int		fd, timeout, newfd;
 	ErlConnect	econn;
+	struct in_addr	addr;
 
 	if ((objc<3) || (objc>4)) {
 		Tcl_WrongNumArgs(ti, 1, objv, "ec fd ?timeout?");
@@ -597,8 +598,8 @@ Etclface_accept(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 	Tcl_Obj *dict = Tcl_NewDictObj();
 	Tcl_DictObjPut(ti, dict, Tcl_NewStringObj("fd", -1), Tcl_NewIntObj(newfd));
 	Tcl_DictObjPut(ti, dict, Tcl_NewStringObj("nodename", -1), Tcl_NewStringObj(econn.nodename,-1));
-	Tcl_DictObjPut(ti, dict, Tcl_NewStringObj("nodeaddr", -1),
-		Tcl_ObjPrintf("%d.%d.%d.%d", econn.ipadr[0], econn.ipadr[0], econn.ipadr[0], econn.ipadr[0]));
+	memcpy(&addr, econn.ipadr, sizeof(addr));
+	Tcl_DictObjPut(ti, dict, Tcl_NewStringObj("nodeaddr", -1), Tcl_NewStringObj(inet_ntoa((addr)), -1));
 
 	Tcl_SetObjResult(ti, dict);
 
