@@ -131,7 +131,7 @@ Literate Programming allows one to produce from a single source file
 a typeset documentation (this note) as well as a compilable \Cee\
 source code.
 
-@ Error Handling. All commands return \.{TCL\_OK} on success or
+@ {\bf Error Handling}. All commands return \.{TCL\_OK} on success or
 \.{TCL\_ERROR} on failure. Tcl scripts can use the \.{catch} command
 to handle the error conditions. For all errors raised by \etf,
 the \.{errorCode} variable wil be set appropriately. In all cases,
@@ -143,7 +143,7 @@ as \.{ERL\_ERROR}, \.{ERL\_TIMEOUT} etc, but without the \.{ERL\_} prefix.
 
 For example, if the \.{etclface::connect} command fails due to the
 \.{ei\_connect\_tmo()} failing, the Tcl variable \.{errorCode} may contain
-"\.{ETCLFACE\ ERROR\ \{5\ ei\_connect\_tmo\ failed\}}".
+"\.{ETCLFACE\ ERROR\ \{[5]\ ei\_connect\_tmo\ failed\}}".
 
 In addition to \.{errorCode}, the variable \.{errorInfo} may also be
 set. This provides a more detailed explanation of the error condition
@@ -159,6 +159,12 @@ and one way of combining basic types, lists.
 
 Erlang, on the other hand, has several types, and the extension needs
 to be able to convert between the types appropriately.
+
+Here, we need to consider the data type representations within three
+languages, Erlang, Tcl and \Cee\, since all conversions between Erlang
+and Tcl types will be through \Cee.
+
+Erlang lists and tuples are represented as lists in Tcl.
 
 @*1The Components.
 
