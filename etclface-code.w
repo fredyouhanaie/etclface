@@ -111,6 +111,7 @@ static Tcl_ObjCmdProc Etclface_decode_double;
 static Tcl_ObjCmdProc Etclface_decode_list;
 static Tcl_ObjCmdProc Etclface_decode_long;
 static Tcl_ObjCmdProc Etclface_decode_pid;
+static Tcl_ObjCmdProc Etclface_decode_ref;
 static Tcl_ObjCmdProc Etclface_decode_string;
 static Tcl_ObjCmdProc Etclface_decode_term;
 static Tcl_ObjCmdProc Etclface_decode_tuple;
@@ -126,6 +127,7 @@ static Tcl_ObjCmdProc Etclface_encode_empty_list;
 static Tcl_ObjCmdProc Etclface_encode_list_header;
 static Tcl_ObjCmdProc Etclface_encode_long;
 static Tcl_ObjCmdProc Etclface_encode_pid;
+static Tcl_ObjCmdProc Etclface_encode_ref;
 static Tcl_ObjCmdProc Etclface_encode_string;
 static Tcl_ObjCmdProc Etclface_encode_tuple_header;
 static Tcl_ObjCmdProc Etclface_init;
@@ -163,6 +165,7 @@ static EtclfaceCommand_t EtclfaceCommand[] = {@/
 	{"etclface::decode_list", Etclface_decode_list},@/
 	{"etclface::decode_long", Etclface_decode_long},@/
 	{"etclface::decode_pid", Etclface_decode_pid},@/
+	{"etclface::decode_ref", Etclface_decode_ref},@/
 	{"etclface::decode_string", Etclface_decode_string},@/
 	{"etclface::decode_term", Etclface_decode_term},@/
 	{"etclface::decode_tuple", Etclface_decode_tuple},@/
@@ -178,6 +181,7 @@ static EtclfaceCommand_t EtclfaceCommand[] = {@/
 	{"etclface::encode_list_header", Etclface_encode_list_header},@/
 	{"etclface::encode_long", Etclface_encode_long},@/
 	{"etclface::encode_pid", Etclface_encode_pid},@/
+	{"etclface::encode_ref", Etclface_encode_ref},@/
 	{"etclface::encode_string", Etclface_encode_string},@/
 	{"etclface::encode_tuple_header", Etclface_encode_tuple_header},@/
 	{"etclface::init", Etclface_init},@/
@@ -1162,6 +1166,36 @@ Etclface_encode_long(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const obj
 	return TCL_OK;
 }
 
+@ \.{etclface::encode\_ref xb ref}.
+
+Takes an existing \.{ei\_x\_buff} and adds the ref handle to it.
+
+@<Encode commands@>=
+static int
+Etclface_encode_ref(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+{
+	ei_x_buff	*xb;
+	erlang_ref	*ref;
+
+	if (objc!=3) {
+		Tcl_WrongNumArgs(ti, 1, objv, "xb ref");
+		return TCL_ERROR;
+	}
+
+	if (get_xb(ti, objv[1], &xb) == TCL_ERROR)
+		return TCL_ERROR;
+
+	if (get_ref(ti, objv[2], &ref) == TCL_ERROR)
+		return TCL_ERROR;
+
+	if (ei_x_encode_ref(xb, ref) < 0) {
+		ErrorReturn(ti, "ERROR", "ei_x_encode_ref failed", 0);
+		return TCL_ERROR;
+	}
+
+	return TCL_OK;
+}
+
 @ \.{etclface::encode\_string xb string}.
 
 Takes an existing \.{ei\_x\_buff} and adds the string to it.
@@ -1526,8 +1560,52 @@ Etclface_decode_pid(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv
 	return TCL_OK;
 }
 
-@ \.{etclface::decode\_string xb}. Assuming that the next term in \.{xb}
-is a string, extract it and return as a string obj.
+@ \.{etclface::decode\_ref xb}.
+
+Extract the next term in \.{xb} as a ref and, if succeessful, return a ref handle.
+
+@<Decode commands@>=
+static int
+Etclface_decode_ref(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+{
+	ei_x_buff	*xb;
+	erlang_ref	*ref;
+
+	if (objc != 2) {
+		Tcl_WrongNumArgs(ti, 1, objv, "xb");
+		return TCL_ERROR;
+	}
+
+	if (get_xb(ti, objv[1], &xb) == TCL_ERROR)
+		return TCL_ERROR;
+
+	ref = (erlang_ref *)Tcl_AttemptAlloc(sizeof(erlang_ref));
+	if (ref == NULL) {
+		ErrorReturn(ti, "ERROR", "Could not allocate memory for ref", 0);
+		TCL_ERROR;
+	}
+
+	if (ei_decode_ref(xb->buff, &xb->index, ref) < 0) {
+		ErrorReturn(ti, "ERROR", "ei_decode_ref failed", 0);
+		return TCL_ERROR;
+	}
+
+	Tcl_SetObjResult(ti, Tcl_ObjPrintf("ref0x%x", ref));
+
+	return TCL_OK;
+}
+
+@ \.{etclface::decode\_ref xb}.
+
+Assuming that the next term in \.{xb} is a ref, extract it and return it
+as a ref handle.
+
+
+
+@ \.{etclface::decode\_string xb}.
+
+Assuming that the next term in \.{xb} is a string, extract it and return
+as a string obj.
 
 Unfortunately we are expected to know the length of the string before
 hand, and supply {\it enough space} to receive a copy of the string.
@@ -1992,6 +2070,23 @@ get_ipaddr(Tcl_Interp *ti, Tcl_Obj *tclobj, Erl_IpAddr *ipaddr) {
 	*ipaddr = (Erl_IpAddr)inaddr;
 	return TCL_OK;
 }
+
+@ \.{get\_ref}. Extract a ref handle from an object.
+
+@<Internal helper functions@>=
+static int
+get_ref(Tcl_Interp *ti, Tcl_Obj *tclobj, erlang_ref **ref)
+{
+	const char* refhandle;
+	refhandle = Tcl_GetString(tclobj);
+	if (sscanf(refhandle, "ref%p", ref) != 1) {
+		ErrorReturn(ti, "ERROR", "Invalid ref handle", 0);
+		return TCL_ERROR;
+	}
+
+	return TCL_OK;
+}
+
 
 @ \.{get\_pid}. Extract a pid handle from an object.
 
