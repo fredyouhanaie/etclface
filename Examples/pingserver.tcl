@@ -14,7 +14,7 @@ package require etclface
 
 # for verbose runs
 proc diag {message} {
-	puts stderr "$::argv0: $message"
+	puts stderr "$::argv0: [clock milliseconds] $message"
 }
 
 # reply to a ping message, e.g.
@@ -29,16 +29,12 @@ proc diag {message} {
 #	term 3.1 is the atom 'is_auth'
 #	term 3.2 is the senders nodename
 #
-proc ping_reply {xb} {
-	diag "ping_reply $xb."
+# We reply by sending a {REF,yes} to the PID
+#
+proc ping_reply {xb fd} {
 	# rewind the index to the beginning
 	etclface::xb_reset $xb
-	catch {etclface::decode_version $xb}
-	# for debugging, pretty-print the message
-	set msg [etclface::xb_print $xb]
-	diag "buff: >$msg<"
-	# rewind the index to the beginning, again!
-	etclface::xb_reset $xb
+	# get the version out of the way
 	catch {etclface::decode_version $xb}
 	if [catch {	set arity [etclface::decode_tuple $xb]
 			if {$arity != 3} {error "bad arity"}
@@ -47,8 +43,7 @@ proc ping_reply {xb} {
 			set arity [etclface::decode_tuple $xb]
 			if {$arity != 2} {error "bad arity"}
 			set pid [etclface::decode_pid $xb]
-			set ref [etclface::decode_term $xb]
-			diag "ref=$ref."
+			set ref [etclface::decode_ref $xb]
 			set arity [etclface::decode_tuple $xb]
 			if {$arity != 2} {error "bad arity"}
 			set tag [etclface::decode_atom $xb]
@@ -59,7 +54,18 @@ proc ping_reply {xb} {
 		return
 	}
 	# message is ok, now send back the reply
-	diag "ping message is OK."
+	if [catch {	set xb2 [etclface::xb_new -withversion]
+			etclface::encode_tuple_header $xb2 2
+			etclface::encode_ref $xb2 $ref
+			etclface::encode_atom $xb2 {yes}
+			etclface::send $fd $pid $xb2
+			etclface::xb_free $xb2
+			} result] {
+		diag "could not send reply ($result)."
+		return
+	}
+	diag "client ponged."
+	return
 }
 
 # uncomment, if needed
@@ -69,7 +75,8 @@ proc ping_reply {xb} {
 if [catch {	set ec [etclface::init $::mynode $::mycookie]
 		set sockfd [etclface::socket - $::myport]
 		etclface::listen $sockfd 5
-		set fd [etclface::publish $ec $::myport] } result] {
+		set fd [etclface::publish $ec $::myport]
+		} result] {
 	diag "startup failed: $result"
 	exit 1
 }
@@ -94,10 +101,9 @@ while true {
 		exit 1
 	}
 	set xb $result
-	diag "xb=$xb."
 
 	# wait for a message on the new connection
-	diag "awaiting a message on $connfd"
+	diag "awaiting a ping message on $connfd"
 	if [catch {etclface::receive $connfd $xb} result] {
 		# something went wrong, clean up and wait for another ping
 		diag "receive failed: $result"
@@ -106,13 +112,11 @@ while true {
 		diag [string repeat "-" 50]
 		continue
 	}
-	set msg $result
-	diag "msg=$msg."
 
 	# check and reply to the ping
-	ping_reply $xb
+	ping_reply $xb $connfd
 
-	# clean up and move wait for another ping
+	# clean up and wait for another ping
 	etclface::disconnect $connfd
 	etclface::xb_free $xb
 	diag [string repeat "-" 50]
