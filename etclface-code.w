@@ -2035,7 +2035,7 @@ ErrorReturn(Tcl_Interp *ti, const char *errorcode, const char *errormsg, const i
 	Tcl_SetErrorCode(ti, "ETCLFACE", errorcode, errormsg, NULL);
 	Tcl_AppendResult(ti, "ETCLFACE ", errorcode, " ", errormsg, NULL);
 	if (errorno != 0) {
-		Tcl_SetObjResult(ti, Tcl_ObjPrintf("[%d] %s", errorno, Tcl_ErrnoMsg(errorno)));
+		Tcl_AppendObjToErrorInfo(ti, Tcl_ObjPrintf("\n[%d] %s", errorno, Tcl_ErrnoMsg(errorno)));
 	}
 	return;
 }
