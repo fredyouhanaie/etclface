@@ -1704,6 +1704,7 @@ and a handle returned as the value.
 @<Decode the term@>=
 		Tcl_Obj		*valueobj = NULL;
 		erlang_pid	*pid;
+		erlang_ref	*ref;
 		switch (term->ei_type) {
 
 		case ERL_SMALL_INTEGER_EXT:
@@ -1735,7 +1736,13 @@ and a handle returned as the value.
 @#
 		case ERL_REFERENCE_EXT:
 		case ERL_NEW_REFERENCE_EXT:@/
-			valueobj = Tcl_NewStringObj("REF", -1);
+			ref = (erlang_ref *)Tcl_AttemptAlloc(sizeof(erlang_ref));
+			if (ref == NULL) {
+				ErrorReturn(ti, "ERROR", "Could not allocate memory for ref", 0);
+				return TCL_ERROR;
+			}
+			memmove(ref, &term->value.ref, sizeof(erlang_ref));
+			valueobj = Tcl_ObjPrintf("ref0x%x", ref);
 			break;
 @#
 		case ERL_PORT_EXT:@/
