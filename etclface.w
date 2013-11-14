@@ -134,7 +134,7 @@ source code.
 @ {\bf Error Handling}. All commands return \.{TCL\_OK} on success or
 \.{TCL\_ERROR} on failure. Tcl scripts can use the \.{catch} command
 to handle the error conditions. For all errors raised by \etf,
-the \.{errorCode} variable wil be set appropriately. In all cases,
+the \.{errorCode} variable will be set appropriately. In all cases,
 \.{errorCode} will be made up of three element list, "\.{ETCLFACE\ {\it
 code}\ {\it message}}". The first part distinguishes our errors from
 other Tcl errors, all \etf errors will have this prefix. The second part

@@ -47,7 +47,7 @@ The \etf commands are collected in a number of groups.
 
 @<Command declarations@>;
 @<Internal helper functions@>;
-@<Initialization commands@>;
+@<Initialisation commands@>;
 @<Connection commands@>;
 @<Send commands@>;
 @<Receive commands@>;
@@ -58,8 +58,8 @@ The \etf commands are collected in a number of groups.
 @<AppInit@>;
 
 @ We follow the standard format for all Tcl extensions. \.{Etclface\_Init}
-initializes the library and declares the commands. We require \.{Tcl}
-version 8.5 or higher, This vesion has been around for some time now,
+initialises the library and declares the commands. We require \.{Tcl}
+version 8.5 or higher, This version has been around for some time now,
 so we can expect it to be available at most sites.
 
 @<AppInit@>=
@@ -208,9 +208,9 @@ static EtclfaceCommand_t EtclfaceCommand[] = {@/
 };
 
 
-@*1Initialization Commands.
+@*1Initialisation Commands.
 
-\erliface provides two functions for initializing
+\erliface provides two functions for initialising
 the local \.{cnode} data structures, \.{ei\_connect\_init()} and
 \.{ei\_connect\_xinit()}. Although it is possible to use a single command
 with two distinct calling sequences, at least for now, we will stay with
@@ -229,7 +229,7 @@ If the \.{cookie} parameter is missing, it will be obtained from
 Initialize and return a handle to an \.{ec} structure, with own name
 \.{nodename} and \.{cookie}.
 
-@<Initialization commands@>=
+@<Initialisation commands@>=
 static int
 Etclface_init(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 {
@@ -265,7 +265,7 @@ Etclface_init(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 Initialize and return a handle to an \.{ec} structure, with own name
 \.{nodename} and \.{cookie}.
 
-@<Initialization commands@>=
+@<Initialisation commands@>=
 static int
 Etclface_xinit(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 {
@@ -619,7 +619,7 @@ Etclface_accept(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 @ \.{etclface::reg\_send ec fd server xb ?timeout?}.
 
 Send a message consisting of an Erlang term stored in \.{xb} to a
-registered process \.{server}, using the \.{ec} handle otained from
+registered process \.{server}, using the \.{ec} handle obtained from
 \.{etclface::init} or \.{etclface::xinit}, and \.{fd} obtained from
 \.{etclface::connect}.
 
@@ -722,7 +722,7 @@ type of message received, along with the message, if relevant.
 
 @ \.{etclface::receive fd xb ?timeout?}.
 
-Wait for a message. If receieved succeefully, put the message into an
+Wait for a message. If received succeefully, put the message into an
 xbuff identified by \.{xb}.
 
 @<Receive commands@>=
@@ -815,7 +815,7 @@ The \.{ei\_x\_encode\_*} functions encode the data into the
 
 @ \.{etclface::xb\_new ?-withversion?}.
 
-Creates a new \.{ei\_x\_buff} structure and initializes the buffer
+Creates a new \.{ei\_x\_buff} structure and initialises the buffer
 using \.{ei\_x\_new()}, or optionally with an initial version byte using
 \.{ei\_x\_new\_with\_version()}.
 
@@ -1527,7 +1527,7 @@ Etclface_decode_long(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const obj
 }
 
 @ \.{etclface::decode\_pid xb}. Extract the next term in \.{xb} as a
-pid and, if succeessful, return a pid handle.
+pid and, if successful, return a pid handle.
 
 @<Decode commands@>=
 static int
@@ -1562,7 +1562,7 @@ Etclface_decode_pid(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv
 
 @ \.{etclface::decode\_ref xb}.
 
-Extract the next term in \.{xb} as a ref and, if succeessful, return a ref handle.
+Extract the next term in \.{xb} as a ref and, if successful, return a ref handle.
 
 @<Decode commands@>=
 static int
@@ -1797,7 +1797,7 @@ Etclface_decode_tuple(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const ob
 @ \.{etclface::decode\_version xb}.
 
 Extract the version encoded in the xbuff \.{xb}. We normally expect the
-version to be at the begining of the buffer.
+version to be at the beginning of the buffer.
 
 @<Decode commands@>=
 static int
@@ -2011,7 +2011,7 @@ ErrorReturn(Tcl_Interp *ti, const char *errorcode, const char *errormsg, const i
 
 @ Extract and convert a timeout value. Given a Tcl object pointer,
 attempt to convert to unsigned int, if successful, the timeout value
-isn returned in the \.{timeout} parameter.
+is returned in the \.{timeout} parameter.
 
 @<Internal helper functions@>=
 static int
