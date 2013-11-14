@@ -99,57 +99,32 @@ typedef struct EtclfaceCommand_s {
 	Tcl_ObjCmdProc	*proc;
 } EtclfaceCommand_t;
 
-@ We need to forward declare the functions first, in alphabetical order.
+@ We need to forward declare the functions first.
 
 @<Command declarations@>=
-static Tcl_ObjCmdProc Etclface_accept;
-static Tcl_ObjCmdProc Etclface_connect;
-static Tcl_ObjCmdProc Etclface_decode_atom;
-static Tcl_ObjCmdProc Etclface_decode_boolean;
-static Tcl_ObjCmdProc Etclface_decode_char;
-static Tcl_ObjCmdProc Etclface_decode_double;
-static Tcl_ObjCmdProc Etclface_decode_list;
-static Tcl_ObjCmdProc Etclface_decode_long;
-static Tcl_ObjCmdProc Etclface_decode_pid;
-static Tcl_ObjCmdProc Etclface_decode_ref;
-static Tcl_ObjCmdProc Etclface_decode_string;
-static Tcl_ObjCmdProc Etclface_decode_term;
-static Tcl_ObjCmdProc Etclface_decode_tuple;
-static Tcl_ObjCmdProc Etclface_decode_version;
-static Tcl_ObjCmdProc Etclface_disconnect;
-static Tcl_ObjCmdProc Etclface_ec_free;
-static Tcl_ObjCmdProc Etclface_ec_show;
-static Tcl_ObjCmdProc Etclface_encode_atom;
-static Tcl_ObjCmdProc Etclface_encode_boolean;
-static Tcl_ObjCmdProc Etclface_encode_char;
-static Tcl_ObjCmdProc Etclface_encode_double;
-static Tcl_ObjCmdProc Etclface_encode_empty_list;
-static Tcl_ObjCmdProc Etclface_encode_list_header;
-static Tcl_ObjCmdProc Etclface_encode_long;
-static Tcl_ObjCmdProc Etclface_encode_pid;
-static Tcl_ObjCmdProc Etclface_encode_ref;
-static Tcl_ObjCmdProc Etclface_encode_string;
-static Tcl_ObjCmdProc Etclface_encode_tuple_header;
-static Tcl_ObjCmdProc Etclface_init;
-static Tcl_ObjCmdProc Etclface_listen;
-static Tcl_ObjCmdProc Etclface_nodename;
-static Tcl_ObjCmdProc Etclface_pid_show;
-static Tcl_ObjCmdProc Etclface_publish;
-static Tcl_ObjCmdProc Etclface_receive;
-static Tcl_ObjCmdProc Etclface_reg_send;
-static Tcl_ObjCmdProc Etclface_self;
-static Tcl_ObjCmdProc Etclface_send;
-static Tcl_ObjCmdProc Etclface_socket;
-static Tcl_ObjCmdProc Etclface_tracelevel;
-static Tcl_ObjCmdProc Etclface_xb_free;
-static Tcl_ObjCmdProc Etclface_xb_new;
-static Tcl_ObjCmdProc Etclface_xb_print;
-static Tcl_ObjCmdProc Etclface_xb_reset;
-static Tcl_ObjCmdProc Etclface_xb_show;
-static Tcl_ObjCmdProc Etclface_xb_skip;
-static Tcl_ObjCmdProc Etclface_xconnect;
-static Tcl_ObjCmdProc Etclface_xinit;
-
+static Tcl_ObjCmdProc	Etclface_init, Etclface_xinit;
+@#
+static Tcl_ObjCmdProc	Etclface_accept, Etclface_connect, Etclface_disconnect,
+			Etclface_listen, Etclface_publish, Etclface_socket, Etclface_xconnect;
+@#
+static Tcl_ObjCmdProc	Etclface_receive, Etclface_reg_send, Etclface_send;
+@#
+static Tcl_ObjCmdProc	Etclface_decode_atom, Etclface_decode_boolean, Etclface_decode_char,
+			Etclface_decode_double, Etclface_decode_list, Etclface_decode_long,
+			Etclface_decode_pid, Etclface_decode_ref, Etclface_decode_string,
+			Etclface_decode_term, Etclface_decode_tuple, Etclface_decode_version;
+@#
+static Tcl_ObjCmdProc	Etclface_encode_atom, Etclface_encode_boolean, Etclface_encode_char,
+			Etclface_encode_double, Etclface_encode_empty_list,
+			Etclface_encode_list_header, Etclface_encode_long, Etclface_encode_pid,
+			Etclface_encode_ref, Etclface_encode_string, Etclface_encode_tuple_header;
+@#
+static Tcl_ObjCmdProc	Etclface_xb_free, Etclface_xb_new, Etclface_xb_print, Etclface_xb_reset,
+			Etclface_xb_show, Etclface_xb_skip;
+@#
+static Tcl_ObjCmdProc	Etclface_ec_free, Etclface_ec_show;
+@#
+static Tcl_ObjCmdProc	Etclface_nodename, Etclface_pid_show, Etclface_self, Etclface_tracelevel;
 
 @ These are the command names and their associated functions, in
 alphabetical order. The last element must be a \.{\{NULL,NULL\}}
@@ -203,7 +178,7 @@ static EtclfaceCommand_t EtclfaceCommand[] = {@/
 	{"etclface::xb_skip", Etclface_xb_skip},@/
 	{"etclface::xconnect", Etclface_xconnect},@/
 	{"etclface::xinit", Etclface_xinit},@/
-
+@#
 	{NULL, NULL}	/* marks the end of the list*/
 };
 
