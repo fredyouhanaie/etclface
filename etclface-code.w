@@ -39,6 +39,7 @@ The \etf commands are collected in a number of groups.
 #include <string.h>
 #include <limits.h>
 #include <arpa/inet.h>
+#include <fcntl.h>
 #include <tcl.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -105,7 +106,8 @@ typedef struct EtclfaceCommand_s {
 static Tcl_ObjCmdProc	Etclface_init, Etclface_xinit;
 @#
 static Tcl_ObjCmdProc	Etclface_accept, Etclface_connect, Etclface_disconnect,
-			Etclface_listen, Etclface_publish, Etclface_socket, Etclface_xconnect;
+			Etclface_listen, Etclface_make_chan, Etclface_publish,
+			Etclface_socket, Etclface_xconnect;
 @#
 static Tcl_ObjCmdProc	Etclface_receive, Etclface_reg_send, Etclface_send;
 @#
@@ -161,6 +163,7 @@ static EtclfaceCommand_t EtclfaceCommand[] = {@/
 	{"etclface::encode_tuple_header", Etclface_encode_tuple_header},@/
 	{"etclface::init", Etclface_init},@/
 	{"etclface::listen", Etclface_listen},@/
+	{"etclface::make_chan", Etclface_make_chan},@/
 	{"etclface::nodename", Etclface_nodename},@/
 	{"etclface::pid_show", Etclface_pid_show},@/
 	{"etclface::publish", Etclface_publish},@/
@@ -471,6 +474,59 @@ Etclface_socket(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 
 	return TCL_OK;
 }
+
+@ \.{etclface::make\_chan fd flag}.
+
+Given an already open file descriptor, \.{fd}, create a corresponding
+Tcl channel. If successful, the channel Id is returned. It is up to the
+caller to keep track of the channel/\.{fd} mappings.
+
+@<Connection commands@>=
+static int
+Etclface_make_chan(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+{
+	int		fd, flag;
+	Tcl_Channel	chan;
+	char		*flagstr;
+
+	if (objc != 3) {
+		Tcl_WrongNumArgs(ti, 1, objv, "fd flag");
+		return TCL_ERROR;
+	}
+
+	if (Tcl_GetIntFromObj(ti, objv[1], &fd) == TCL_ERROR)
+		return TCL_ERROR;
+
+	if (fcntl(fd, F_GETFD) < 0) {
+		ErrorReturn(ti, "ERROR", "file descriptor is not open", errno);
+		return TCL_ERROR;
+	}
+
+	flagstr = Tcl_GetString(objv[2]);
+	if (!strcmp(flagstr, "R")) {
+		flag = TCL_READABLE;
+	} else if (!strcmp(flagstr, "W")) {
+		flag = TCL_WRITABLE;
+	} else if (!strcmp(flagstr, "RW")) {
+		flag = TCL_READABLE | TCL_WRITABLE;
+	} else {
+		ErrorReturn(ti, "ERROR", "Invalid flag, should be R, W or RW", 0);
+		return TCL_ERROR;
+	}
+
+	chan = Tcl_MakeFileChannel((ClientData)fd, flag);
+	if (chan == NULL) {
+		ErrorReturn(ti, "ERROR", "Tcl_MakeFileChannel failed", 0);
+		return TCL_ERROR;
+	}
+
+	Tcl_RegisterChannel(ti, chan);
+
+	Tcl_SetObjResult(ti, Tcl_NewStringObj(Tcl_GetChannelName(chan), -1));
+
+	return TCL_OK;
+}
+
 
 @ \.{etclface::listen fd backlog}.
 
