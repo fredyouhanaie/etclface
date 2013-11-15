@@ -788,12 +788,19 @@ Etclface_receive(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 	return TCL_OK;
 }
 
-@ Wait for message. We ignore ticks.
+@ Wait for a message. If we get a tick (keep alive message) from another
+node, we return \.{TICK} to the caller. Timeouts and errors are returned
+as error, although, in future a timeout may be treated as a normal return.
 
 @<Receive message@>=
 	int res;
-	while ((res = ei_xreceive_msg_tmo(fd, &msg, xb, timeout)) == ERL_TICK)@/
-		;
+
+	res = ei_xreceive_msg_tmo(fd, &msg, xb, timeout);
+
+	if (res == ERL_TICK) {
+		Tcl_SetObjResult(ti, Tcl_NewStringObj("TICK", -1));
+		return TCL_OK;
+	}
 
 	if (res == ERL_TIMEOUT) {
 		ErrorReturn(ti, "TIMEOUT", "ei_xreceive_msg_tmo timed out", 0);

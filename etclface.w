@@ -87,7 +87,9 @@
 @s ei_cnode int
 @s ei_term int
 @s ei_x_buff int
+@s erlang_msg int
 @s erlang_pid int
+@s erlang_ref int
 @s Erl_IpAddr int
 
 @s EtclfaceCommand_s int
