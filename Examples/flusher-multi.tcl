@@ -64,7 +64,7 @@ proc diag {message} {
 # this is the handle for receiving connection requests
 # once a connection is accepted, a new handle is set up for the new fd/chan
 proc get_conn {ec chan fd} {
-	if [catch {etclface::accept $ec $fd} result] {
+	if [catch {etclface::accept $ec $fd $::timeout} result] {
 		diag "($chan) accept failed: $result."
 	} else {
 		array set econn $result
@@ -101,6 +101,23 @@ proc get_message {chan fd} {
 	return
 }
 
+# handle for stdin
+# user can interrupt the normal flow and have a tcl command executed. If
+# empty line, then even processing is interrupted the user is prompted
+# for a single line the entered is then evaluated as Tcl command.
+proc user_input {} {
+	gets stdin cmd
+	if {[string length $cmd] == 0} {
+		puts -nonewline stderr "stdin> "
+		gets stdin cmd
+	}
+	diag "(stdin) $cmd"
+	catch {eval $cmd} result
+	diag "(stdin) $result"
+}
+
+### MAIN ###
+
 # this is for diag timestamps
 set ::oldtime	[clock milliseconds]
 
@@ -123,6 +140,9 @@ diag "startup OK."
 set chan [etclface::make_chan $sockfd R]
 chan event $chan readable "get_conn $ec $chan $sockfd"
 diag "($chan) awaiting connections on $fd."
+
+# set up a handle on stdin for user interaction
+chan event stdin readable "user_input"
 
 vwait forever
 
