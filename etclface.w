@@ -125,7 +125,7 @@ There are two sets of communication modules within \erliface, the
 old \.{erl\_*} ones and the newer \.{ei\_*} set. For \etf we are using the
 latter.
 
-@ The programming language used in creating the extension is \.{cweb},
+@ {\bf \tt CWEB}. The programming language used in creating the extension is \.{CWEB},
 which consists of standard \Cee\ code together with the annotations
 describing the code segments. This is known as Literate Programming. The
 web site \url{http://literateprogramming.com} is a good starting point
@@ -155,7 +155,7 @@ intended to be read by people.
 
 More details can be found in the Tcl man pages for \.{tclvars} and \.{catch}.
 
-@*1Data Types and Data Structures.
+@ {\bf Data Types and Data Structures}.
 
 Tcl understands one data type only, character strings, although the
 underlying commands can interpret the character strings in different ways,
@@ -170,7 +170,7 @@ and Tcl types will be through \Cee.
 
 Erlang lists and tuples are represented as lists in Tcl.
 
-@*1The Components.
+@ {\bf The Components}.
 
 The basic interface is written in \Cee. The source code can be found at
 the end of this document, see the section {\it The Source Code}.
@@ -179,14 +179,14 @@ There will also be an additional library written in Tcl that will provide
 a higher level functionality, such as encoding and decoding of Erlang
 terms to and from Tcl data types, such as lists and dictionaries.
 
-@*1Installation. The software is available in source form and can be
+@ {\bf Installation}. The software is available in source form and can be
 downloaded, or cloned, from github, see
 \url{https://github.com/fredyouhanaie/etclface}.
 
 The build and installation is done using \.{cmake}, see
 \url{http://cmake.org}.
 
-@*1Testing. There are two sets of test scripts, one for tests initiated
+@ {\bf Testing}. There are two sets of test scripts, one for tests initiated
 from the Erlang side, and the other for tests run on the Tcl side.
 
 The tests on the Tcl side are based on the \.{tcltest} package are located

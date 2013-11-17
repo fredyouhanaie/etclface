@@ -477,8 +477,14 @@ Etclface_socket(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 @ \.{etclface::make\_chan fd flag}.
 
 Given an already open file descriptor, \.{fd}, create a corresponding
-Tcl channel. If successful, the channel Id is returned. It is up to the
-caller to keep track of the channel/\.{fd} mappings.
+Tcl channel. If successful, the channel name is returned. The channel
+name can be used to create Tcl event handlers, such as when a new message
+has arrived on the open \.{fd}, however, in order to receive the message
+the caller should use the corresponding \.{fd} with \.{etclface::receive}.
+It is up to the caller to keep track of the channel/\.{fd} mappings.
+
+The \.{flag} should be one of \.{R}, \.{W} or \.{RW}, indicating whether
+the \.{fd} is readable, writable or both, respectively.
 
 @<Connection commands@>=
 static int
@@ -504,11 +510,11 @@ Etclface_make_chan(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[
 	flagstr = Tcl_GetString(objv[2]);
 	if (!strcmp(flagstr, "R")) {
 		flag = TCL_READABLE;
-	} else if (!strcmp(flagstr, "W")) {
+	} @+else if (!strcmp(flagstr, "W")) {
 		flag = TCL_WRITABLE;
-	} else if (!strcmp(flagstr, "RW")) {
+	} @+else if (!strcmp(flagstr, "RW")) {
 		flag = TCL_READABLE | TCL_WRITABLE;
-	} else {
+	} @+else {
 		ErrorReturn(ti, "ERROR", "Invalid flag, should be R, W or RW", 0);
 		return TCL_ERROR;
 	}
