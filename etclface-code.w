@@ -129,7 +129,7 @@ static Tcl_ObjCmdProc	Etclface_ec_free, Etclface_ec_show;
 static Tcl_ObjCmdProc	Etclface_nodename, Etclface_pid_show, Etclface_self, Etclface_tracelevel;
 
 @ These are the command names and their associated functions, in
-alphabetical order. The last element must be a \.{\{NULL,NULL\}}
+alphabetical order. The last element must be a \.{\{NULL, NULL\}}.
 
 @<Command declarations@>=
 static EtclfaceCommand_t EtclfaceCommand[] = {@/
@@ -184,7 +184,6 @@ static EtclfaceCommand_t EtclfaceCommand[] = {@/
 @#
 	{NULL, NULL}	/* marks the end of the list*/
 };
-
 
 @*1Initialisation Commands.
 
@@ -526,7 +525,6 @@ Etclface_make_chan(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[
 
 	return TCL_OK;
 }
-
 
 @ \.{etclface::listen fd backlog}.
 
@@ -933,12 +931,13 @@ is a pointer and the \.{d}s are integers. This lends itself to being parsed as a
 static int
 Etclface_xb_show(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 {
+	ei_x_buff *xb;
+
 	if (objc!=2) {
 		Tcl_WrongNumArgs(ti, 1, objv, "xb");
 		return TCL_ERROR;
 	}
 
-	ei_x_buff *xb;
 	if (get_xb(ti, objv[1], &xb) == TCL_ERROR)
 		return TCL_ERROR;
 
@@ -1001,12 +1000,13 @@ Reset the index to the start of the buffer.
 static int
 Etclface_xb_reset(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 {
+	ei_x_buff *xb;
+
 	if (objc!=2) {
 		Tcl_WrongNumArgs(ti, 1, objv, "xb");
 		return TCL_ERROR;
 	}
 
-	ei_x_buff *xb;
 	if (get_xb(ti, objv[1], &xb) == TCL_ERROR)
 		return TCL_ERROR;
 
@@ -1023,12 +1023,13 @@ Move the index forward to point to the next term.
 static int
 Etclface_xb_skip(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 {
+	ei_x_buff *xb;
+
 	if (objc!=2) {
 		Tcl_WrongNumArgs(ti, 1, objv, "xb");
 		return TCL_ERROR;
 	}
 
-	ei_x_buff *xb;
 	if (get_xb(ti, objv[1], &xb) == TCL_ERROR)
 		return TCL_ERROR;
 
@@ -1387,7 +1388,6 @@ Etclface_encode_pid(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv
 	return TCL_OK;
 }
 
-
 @*1Decode Commands.
 
 The decode commands implement the various \.{ei\_decode\_*} functions
@@ -1480,7 +1480,6 @@ Etclface_decode_char(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const obj
 	Tcl_SetObjResult(ti, Tcl_NewIntObj(uchar));
 	return TCL_OK;
 }
-
 
 @ \.{etclface::decode\_double xb}. Extract the next term from \.{xb}
 as a double, if successful, a double is returned.
@@ -1637,8 +1636,6 @@ Etclface_decode_ref(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv
 
 Assuming that the next term in \.{xb} is a ref, extract it and return it
 as a ref handle.
-
-
 
 @ \.{etclface::decode\_string xb}.
 
@@ -1888,8 +1885,6 @@ Etclface_pid_show(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[]
 	return TCL_OK;
 }
 
-
-
 @ \.{etclface::self ec}.
 
 Return the pid handle for the given \.{ei\_cnode}. The handle will
@@ -1900,16 +1895,18 @@ be of the form \.{pid0x123456}, which can be used in subsequent
 static int
 Etclface_self(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 {
+	ei_cnode *ec;
+	erlang_pid *self;
+
 	if (objc != 2) {
 		Tcl_WrongNumArgs(ti, 1, objv, "ec");
 		return TCL_ERROR;
 	}
 
-	ei_cnode *ec;
 	if (get_ec(ti, objv[1], &ec) == TCL_ERROR)
 		return TCL_ERROR;
 
-	erlang_pid *self = ei_self(ec);
+	self = ei_self(ec);
 	Tcl_SetObjResult(ti, Tcl_ObjPrintf("pid0x%x", self));
 
 	return TCL_OK;
@@ -1923,19 +1920,21 @@ Return the node name of the cnode.
 static int
 Etclface_nodename(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 {
+	ei_cnode *ec;
+	char *nodename;
+
 	if (objc != 2) {
 		Tcl_WrongNumArgs(ti, 1, objv, "ec");
 		return TCL_ERROR;
 	}
 
-	ei_cnode *ec;
 	if (get_ec(ti, objv[1], &ec) == TCL_ERROR)
 		return TCL_ERROR;
 
-	char *nodename;
 	nodename = (char *)ei_thisnodename(ec);
 
 	Tcl_SetObjResult(ti, Tcl_NewStringObj(nodename, -1));
+
 	return TCL_OK;
 }
 
@@ -2131,7 +2130,6 @@ get_ref(Tcl_Interp *ti, Tcl_Obj *tclobj, erlang_ref **ref)
 
 	return TCL_OK;
 }
-
 
 @ \.{get\_pid}. Extract a pid handle from an object.
 

@@ -80,9 +80,10 @@
 %% Treat the various data types as reserved words when typesetting.
 
 @s ClientData int
-@s Tcl_Obj int
+@s Tcl_Channel int
 @s Tcl_Interp int
 @s Tcl_ObjCmdProc int
+@s Tcl_Obj int
 
 @s ei_cnode int
 @s ei_term int
@@ -90,6 +91,7 @@
 @s erlang_msg int
 @s erlang_pid int
 @s erlang_ref int
+@s ErlConnect int
 @s Erl_IpAddr int
 
 @s EtclfaceCommand_s int
