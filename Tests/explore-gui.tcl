@@ -18,16 +18,24 @@ package require etclface
 set Handles [dict create]
 
 # for forms data entry
+set ::conn_echandle {}
+set ::conn_nodename {erlnode@localhost}
+
 set ::init_nodename {etfnode}
 set ::init_cookie {secretcookie}
 
-set ::conn_echandle {}
-set ::conn_nodename {erlnode@localhost}
+set ::regsend_echandle {}
+set ::regsend_fdhandle {}
+set ::regsend_server   {server1}
+set ::regsend_xbhandle {}
+
 
 proc diag {msg} {
 	puts stderr "$::argv0: $msg"
 }
 
+# new_form
+# create and display a form in a separate window
 proc new_form {name descr formproc actionproc} {
 	set root .${name}
 	# let's be brutal!
@@ -36,29 +44,35 @@ proc new_form {name descr formproc actionproc} {
 	toplevel ${root} 
 	wm title ${root} $descr
 
-	$formproc $root
+	if [catch "$formproc $root"] {
+		destroy $root
+		return
+	}
 
 	button	${root}.ok	-text OK	-command $actionproc
 	button	${root}.cancel	-text Cancel	-command "destroy ${root}"
 	grid ${root}.ok ${root}.cancel
 }
 
-proc form_conn {root} {
-	if {![dict exists $::Handles ec index]} {
-		tk_messageBox -type ok -message "No ec handles, call init first"
-		destroy $root
-		return
+proc check_handle {type root handle_var} {
+	if {![dict exists $::Handles ${type} index]} {
+		tk_messageBox -type ok -message "No ${type} handles found."
+		return -code error
 	}
+	label	${root}.${type}_lab_handle -text "$type Handle"
+	set handlelist [dict keys [dict get $::Handles $type] ${type}*]
+	set $handle_var [lindex $handlelist 0]
+	tk_optionMenu ${root}.${type}_mb_handle $handle_var {*}$handlelist
+	return
+}
 
-	label	${root}.lab_handle -text "ec Handle"
-	set eclist [dict keys [dict get $::Handles ec] ec*]
-	set ::conn_echandle [lindex $eclist 0]
-	tk_optionMenu ${root}.mb_handle ::conn_echandle {*}$eclist
+proc form_conn {root} {
+	if [catch {check_handle ec $root ::conn_echandle}] { return -code error}
 
 	label	${root}.lab_nodename -text "Remote Node"
 	entry	${root}.ent_nodename -textvariable ::conn_nodename
 
-	grid ${root}.lab_handle ${root}.mb_handle
+	grid ${root}.ec_lab_handle ${root}.ec_mb_handle
 	grid ${root}.lab_nodename ${root}.ent_nodename
 }
 
@@ -70,6 +84,20 @@ proc form_init {root} {
 	label	${root}.lab_cookie -text "cookie"
 	entry	${root}.ent_cookie -textvariable ::init_cookie -validate all
 	grid ${root}.lab_cookie ${root}.ent_cookie
+}
+
+proc form_regsend {root} {
+	if [catch {check_handle ec $root ::regsend_echandle}] { return -code error}
+	if [catch {check_handle fd $root ::regsend_fdhandle}] { return -code error}
+
+	label	${root}.lab_server -text "Remote process name"
+	entry	${root}.ent_server -textvariable ::regsend_server
+	if [catch {check_handle xb $root ::regsend_xbhandle}] { return -code error}
+
+	grid ${root}.ec_lab_handle ${root}.ec_mb_handle
+	grid ${root}.fd_lab_handle ${root}.fd_mb_handle
+	grid ${root}.lab_server    ${root}.ent_server
+	grid ${root}.xb_lab_handle ${root}.xb_mb_handle
 }
 
 proc do_conn {} {
@@ -123,9 +151,11 @@ proc add_handle {type data} {
 
 button .conn	-text conn	-command {new_form form_conn {Connection Form} form_conn do_conn}
 button .init	-text init	-command {new_form form_init {Initialization Form} form_init do_init}
+button .regsend	-text regsend	-command {new_form form_regsend {Registered Send Form} form_regsend do_regsend}
 button .quit	-text Quit	-command exit
 
 grid .conn
 grid .init
+grid .regsend
 grid .quit
 
