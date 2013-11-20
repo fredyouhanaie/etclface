@@ -28,14 +28,22 @@ proc diag {msg} {
 	puts stderr "$::argv0: $msg"
 }
 
-proc form_conn {} {
-	set root .form_conn
+proc new_form {name descr formproc actionproc} {
+	set root .${name}
 	# let's be brutal!
 	catch [destroy $root]
 
 	toplevel ${root} 
-	wm title ${root} {Connection Form}
+	wm title ${root} $descr
 
+	$formproc $root
+
+	button	${root}.ok	-text OK	-command $actionproc
+	button	${root}.cancel	-text Cancel	-command "destroy ${root}"
+	grid ${root}.ok ${root}.cancel
+}
+
+proc form_conn {root} {
 	if {![dict exists $::Handles ec index]} {
 		tk_messageBox -type ok -message "No ec handles, call init first"
 		destroy $root
@@ -52,23 +60,9 @@ proc form_conn {} {
 
 	grid ${root}.lab_handle ${root}.mb_handle
 	grid ${root}.lab_nodename ${root}.ent_nodename
-
-	button	${root}.ok	-text OK	-command do_conn
-	button	${root}.cancel	-text Cancel	-command "destroy ${root}"
-	grid ${root}.ok ${root}.cancel
 }
 
-proc form_init {} {
-	set root .form_init
-
-	if [string length [info commands $root]] {
-		tk_messageBox -type ok -message "An init form is already active"
-		return
-	}
-
-	toplevel ${root} 
-	wm title ${root} {Init Form}
-
+proc form_init {root} {
 	label	${root}.lab_node -text "nodename"
 	entry	${root}.ent_node -textvariable ::init_nodename -validate all
 	grid ${root}.lab_node ${root}.ent_node
@@ -76,10 +70,6 @@ proc form_init {} {
 	label	${root}.lab_cookie -text "cookie"
 	entry	${root}.ent_cookie -textvariable ::init_cookie -validate all
 	grid ${root}.lab_cookie ${root}.ent_cookie
-
-	button	${root}.ok	-text OK	-command do_init
-	button	${root}.cancel	-text Cancel	-command "destroy ${root}"
-	grid ${root}.ok ${root}.cancel
 }
 
 proc do_conn {} {
@@ -131,8 +121,8 @@ proc add_handle {type data} {
 
 #  MAIN  ##########################
 
-button .conn	-text conn	-command form_conn
-button .init	-text init	-command form_init
+button .conn	-text conn	-command {new_form form_conn {Connection Form} form_conn do_conn}
+button .init	-text init	-command {new_form form_init {Initialization Form} form_init do_init}
 button .quit	-text Quit	-command exit
 
 grid .conn
