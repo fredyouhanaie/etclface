@@ -36,6 +36,9 @@ proc diag {msg} {
 
 # new_form
 # create and display a form in a separate window
+# - the form will be on its own top level wiondow
+# - it will be identified by the "name" parameter
+# - if one is already active, it will be destroyed/replaced
 proc new_form {name descr formproc actionproc} {
 	set root .${name}
 	# let's be brutal!
@@ -54,6 +57,8 @@ proc new_form {name descr formproc actionproc} {
 	grid ${root}.ok ${root}.cancel
 }
 
+# check_handle
+# check and provide a menu of handles for the user to choose
 proc check_handle {type root handle_var} {
 	if {![dict exists $::Handles ${type} index]} {
 		tk_messageBox -type ok -message "No ${type} handles found."
@@ -66,6 +71,9 @@ proc check_handle {type root handle_var} {
 	return
 }
 
+# form_conn
+# collect parameters for etclface::connect
+# - this is expected to be called from within new_form
 proc form_conn {root} {
 	if [catch {check_handle ec $root ::conn_echandle}] { return -code error}
 
@@ -76,6 +84,9 @@ proc form_conn {root} {
 	grid ${root}.lab_nodename ${root}.ent_nodename
 }
 
+# form_init
+# collect parameters for etclface::init
+# - this is expected to be called from within new_form
 proc form_init {root} {
 	label	${root}.lab_node -text "nodename"
 	entry	${root}.ent_node -textvariable ::init_nodename -validate all
@@ -86,6 +97,9 @@ proc form_init {root} {
 	grid ${root}.lab_cookie ${root}.ent_cookie
 }
 
+# form_regsend
+# collect parameters for etclface::reg_send
+# - this is expected to be called from within new_form
 proc form_regsend {root} {
 	if [catch {check_handle ec $root ::regsend_echandle}] { return -code error}
 	if [catch {check_handle fd $root ::regsend_fdhandle}] { return -code error}
@@ -100,6 +114,9 @@ proc form_regsend {root} {
 	grid ${root}.xb_lab_handle ${root}.xb_mb_handle
 }
 
+# do_conn
+# verify paremeters and execute etclface::connect
+# - this is expected to be called via the form_conn's OK button
 proc do_conn {} {
 	if {![dict exists $::Handles ec $::conn_echandle]} {
 		tk_messageBox -type ok -message "Please select an ec Handle" -icon error
@@ -117,6 +134,9 @@ proc do_conn {} {
 	destroy .form_conn
 }
 
+# do_init
+# verify paremeters and execute etclface::init
+# - this is expected to be called via the form_init's OK button
 proc do_init {} {
 	if [catch {	if [string length $::init_cookie] {
 				etclface::init $::init_nodename $::init_cookie
@@ -130,6 +150,9 @@ proc do_init {} {
 	destroy .form_init
 }
 
+# do_regsend
+# verify paremeters and execute etclface::reg_send
+# - this is expected to be called via the form_regsend's OK button
 proc add_handle {type data} {
 	# create the type specific dictionary, if this is the first ever handle of this type
 	if {![dict exists $::Handles $type]} {
