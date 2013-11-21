@@ -26,9 +26,10 @@ set ::init_cookie {secretcookie}
 
 set ::regsend_echandle {}
 set ::regsend_fdhandle {}
-set ::regsend_server   {server1}
 set ::regsend_xbhandle {}
+set ::regsend_server   {server1}
 
+set ::xbuff_withversion 1
 
 proc diag {msg} {
 	puts stderr "$::argv0: $msg"
@@ -110,10 +111,18 @@ proc form_regsend {root} {
 
 	grid ${root}.ec_lab_handle ${root}.ec_mb_handle
 	grid ${root}.fd_lab_handle ${root}.fd_mb_handle
-	grid ${root}.lab_server    ${root}.ent_server
 	grid ${root}.xb_lab_handle ${root}.xb_mb_handle
+	grid ${root}.lab_server    ${root}.ent_server
 }
 
+# form_xbuff
+# collect parameters for etclface::xb_new
+# - this is expected to be called from within new_form
+proc form_xbuff {root} {
+	label		${root}.lab_version -text "With version?"
+	checkbutton	${root}.ckb_version -textvariable ::xbuff_withversion
+	grid ${root}.lab_version ${root}.ckb_version
+}
 # do_conn
 # verify paremeters and execute etclface::connect
 # - this is expected to be called via the form_conn's OK button
@@ -153,6 +162,35 @@ proc do_init {} {
 # do_regsend
 # verify paremeters and execute etclface::reg_send
 # - this is expected to be called via the form_regsend's OK button
+proc do_regsend {} {
+	if [catch {	set ec [dict get $::Handles ec $::regsend_echandle handle]
+			set fd [dict get $::Handles fd $::regsend_fdhandle fd]
+			set xb [dict get $::Handles xb $::regsend_xbhandle handle]
+			etclface::reg_send $ec $fd $::regsend_server $xb
+			} result ] {
+		tk_messageBox -type ok -message $result -icon error
+	}
+	destroy .form_regsend
+}
+
+# do_xbuff
+# verify paremeters and execute etclface::reg_send
+# - this is expected to be called via the form_regsend's OK button
+proc do_xbuff {} {
+	if [catch {	if [string length $::xbuff_withversion] {
+				etclface::xb_new -withversion
+			} else {
+				etclface::xb_new
+			} } result ] {
+		tk_messageBox -type ok -message $result -icon error
+	} else {
+		add_handle xb "handle $result"
+	}
+	destroy .form_xbuff
+}
+
+# add_handle
+# generic function to save a handle
 proc add_handle {type data} {
 	# create the type specific dictionary, if this is the first ever handle of this type
 	if {![dict exists $::Handles $type]} {
@@ -172,13 +210,19 @@ proc add_handle {type data} {
 
 #  MAIN  ##########################
 
-button .conn	-text conn	-command {new_form form_conn {Connection Form} form_conn do_conn}
-button .init	-text init	-command {new_form form_init {Initialization Form} form_init do_init}
-button .regsend	-text regsend	-command {new_form form_regsend {Registered Send Form} form_regsend do_regsend}
-button .quit	-text Quit	-command exit
+array set commands {
+	conn	"Connection Form"
+	init	"Initialization Form"
+	regsend	"Registered Send Form"
+	xbuff	"x_buff Form"
+}
 
-grid .conn
-grid .init
-grid .regsend
-grid .quit
+set buttons {}
+foreach name [lsort [array names commands]] {
+	button .$name -text $name -command "new_form form_${name} {$commands($name)} form_$name do_$name"
+	lappend buttons .$name
+} 
+button .quit -text Quit -command exit
+
+grid {*}[lsort $buttons] .quit
 
