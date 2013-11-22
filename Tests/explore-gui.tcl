@@ -239,6 +239,50 @@ proc add_handle {type data} {
 	diag "add_handle: $::Handles"
 }
 
+proc handles {} {
+	if {[llength [dict keys $::Handles]] == 0} {
+		tk_messageBox -type ok -message "You have not created any handles yet."
+		return
+	}
+
+	set root .hantree
+	# let's be brutal!
+	catch [destroy $root]
+	toplevel ${root}
+	wm title ${root} {Handles}
+
+	set tree ${root}.tree
+	set hbar ${root}.hbar
+	set vbar ${root}.vbar
+
+	ttk::treeview $tree -columns {data} \
+		-yscrollcommand "$vbar set" -xscrollcommand "$hbar set"
+	ttk::scrollbar $vbar -orient vertical	-command "$tree yview"
+	ttk::scrollbar $hbar -orient horizontal	-command "$tree xview"
+
+	grid $tree -row 0 -column 0 -sticky nsew
+	grid $vbar -row 0 -column 1 -sticky ns
+	grid $hbar -row 1 -column 0 -sticky ew
+
+	grid columnconfigure	$root 0 -weight 1
+	grid rowconfigure	$root 0 -weight 1
+
+	$tree see [$tree insert {} end -open true -text test -values [string repeat aa 80]]
+	foreach hantype [lsort [dict keys $::Handles]] {
+		$tree insert {} end -id $hantype -open true -text $hantype
+		$tree insert $hantype end -id ${hantype}_index -open true -text index \
+			-values [dict get $::Handles $hantype index]
+		set handlelist [dict keys [dict get $::Handles $hantype] ${hantype}*]
+		foreach handle [lsort $handlelist] {
+			$tree insert $hantype end -id $handle -open true -text $handle
+			set handata [dict get $::Handles $hantype $handle]
+			foreach hanpar [lsort [dict keys $handata]] {
+				$tree insert $handle end -id ${handle}_${hanpar} -text $hanpar -value [dict get $handata $hanpar]
+			}
+		}
+	}
+}
+
 #  MAIN  ##########################
 
 array set commands {
@@ -249,12 +293,16 @@ array set commands {
 	xbuff	"x_buff Form"
 }
 
+# buttons for form-based commands
 set buttons {}
 foreach name [lsort [array names commands]] {
 	button .$name -text $name -command "new_form form_${name} {$commands($name)} form_$name do_$name"
 	lappend buttons .$name
 } 
-button .quit -text Quit -command exit
+# ad hoc buttons
+button .handles	-text Handles	-command handles
+button .quit	-text Quit	-command exit
 
-grid {*}[lsort $buttons] .quit
+# show everything left to right in one row
+grid {*}[lsort $buttons] .handles .quit
 
