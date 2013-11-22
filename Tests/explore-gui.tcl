@@ -29,6 +29,9 @@ set ::regsend_fdhandle {}
 set ::regsend_xbhandle {}
 set ::regsend_server   {server1}
 
+set ::encode_type  {atom}
+set ::encode_value {}
+
 set ::xbuff_withversion 1
 
 proc diag {msg} {
@@ -85,6 +88,23 @@ proc form_conn {root} {
 	grid ${root}.lab_nodename ${root}.ent_nodename
 }
 
+# form_encode
+# collect parameters for etclface::encode
+# - this is expected to be called from within new_form
+proc form_encode {root} {
+	set typelist {atom long string}
+	if [catch {check_handle xb $root ::encode_xbhandle}] { return -code error}
+
+	label ${root}.lab_type -text "Term type"
+	tk_optionMenu ${root}.mb_type ::encode_type {*}$typelist
+
+	label	${root}.lab_value -text "Term value"
+	entry	${root}.ent_value -textvariable ::encode_value
+
+	grid ${root}.lab_type ${root}.mb_type
+	grid ${root}.lab_value ${root}.ent_value
+}
+
 # form_init
 # collect parameters for etclface::init
 # - this is expected to be called from within new_form
@@ -119,10 +139,12 @@ proc form_regsend {root} {
 # collect parameters for etclface::xb_new
 # - this is expected to be called from within new_form
 proc form_xbuff {root} {
-	label		${root}.lab_version -text "With version?"
-	checkbutton	${root}.ckb_version -textvariable ::xbuff_withversion
-	grid ${root}.lab_version ${root}.ckb_version
+	##label		${root}.lab_version -text ""
+	checkbutton	${root}.ckb_version -text "with version" -variable ::xbuff_withversion
+	##grid ${root}.lab_version ${root}.ckb_version
+	grid ${root}.ckb_version -columnspan 2
 }
+
 # do_conn
 # verify paremeters and execute etclface::connect
 # - this is expected to be called via the form_conn's OK button
@@ -141,6 +163,15 @@ proc do_conn {} {
 		add_handle fd "fd $fd chan $ch echandle $::conn_echandle nodename $::conn_nodename"
 	}
 	destroy .form_conn
+}
+
+# do_encode
+# verify paremeters and execute etclface::encode_*
+# - this is expected to be called via the form_encode's OK button
+proc do_encode {} {
+	set xb [dict get $::Handles xb $::encode_xbhandle handle]
+	etclface::encode_${::encode_type} $xb $::encode_value
+	destroy .form_encode
 }
 
 # do_init
@@ -177,7 +208,7 @@ proc do_regsend {} {
 # verify paremeters and execute etclface::reg_send
 # - this is expected to be called via the form_regsend's OK button
 proc do_xbuff {} {
-	if [catch {	if [string length $::xbuff_withversion] {
+	if [catch {	if {$::xbuff_withversion} {
 				etclface::xb_new -withversion
 			} else {
 				etclface::xb_new
@@ -212,6 +243,7 @@ proc add_handle {type data} {
 
 array set commands {
 	conn	"Connection Form"
+	encode	"Encode a term"
 	init	"Initialization Form"
 	regsend	"Registered Send Form"
 	xbuff	"x_buff Form"
