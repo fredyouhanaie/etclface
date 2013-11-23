@@ -38,6 +38,10 @@ proc diag {msg} {
 	puts stderr "$::argv0: $msg"
 }
 
+proc show_error {msg} {
+	tk_messageBox -type ok -message $msg -detail $::errorInfo -icon error
+}
+
 # new_form
 # create and display a form in a separate window
 # - the form will be on its own top level wiondow
@@ -92,15 +96,16 @@ proc form_conn {root} {
 # collect parameters for etclface::encode
 # - this is expected to be called from within new_form
 proc form_encode {root} {
-	set typelist {atom long string}
+	set typelist {atom boolean char empty_list list_header long string tuple_header}
 	if [catch {check_handle xb $root ::encode_xbhandle}] { return -code error}
 
 	label ${root}.lab_type -text "Term type"
 	tk_optionMenu ${root}.mb_type ::encode_type {*}$typelist
 
-	label	${root}.lab_value -text "Term value"
+	label	${root}.lab_value -text "Term value/arity"
 	entry	${root}.ent_value -textvariable ::encode_value
 
+	grid ${root}.xb_lab_handle ${root}.xb_mb_handle
 	grid ${root}.lab_type ${root}.mb_type
 	grid ${root}.lab_value ${root}.ent_value
 }
@@ -170,7 +175,14 @@ proc do_conn {} {
 # - this is expected to be called via the form_encode's OK button
 proc do_encode {} {
 	set xb [dict get $::Handles xb $::encode_xbhandle handle]
-	etclface::encode_${::encode_type} $xb $::encode_value
+	if [catch {	if {$::encode_type == "empty_list"} {
+				etclface::encode_${::encode_type} $xb
+			} else {
+				etclface::encode_${::encode_type} $xb "$::encode_value"
+			}
+			} result ] {
+		show_error $result
+	}
 	destroy .form_encode
 }
 
@@ -267,7 +279,6 @@ proc handles {} {
 	grid columnconfigure	$root 0 -weight 1
 	grid rowconfigure	$root 0 -weight 1
 
-	$tree see [$tree insert {} end -open true -text test -values [string repeat aa 80]]
 	foreach hantype [lsort [dict keys $::Handles]] {
 		$tree insert {} end -id $hantype -open true -text $hantype
 		$tree insert $hantype end -id ${hantype}_index -open true -text index \
