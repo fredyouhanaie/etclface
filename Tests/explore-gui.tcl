@@ -162,7 +162,7 @@ proc do_conn {} {
 			set fd [etclface::connect $ec $::conn_nodename]
 			set ch [etclface::make_chan $fd R]
 			} result] {
-		tk_messageBox -type ok -message $::errorInfo -icon error
+		show_error $result
 	} else {
 		
 		add_handle fd "fd $fd chan $ch echandle $::conn_echandle nodename $::conn_nodename"
@@ -195,7 +195,7 @@ proc do_init {} {
 			} else {
 				etclface::init $::init_nodename
 			} } result ] {
-		tk_messageBox -type ok -message $result -icon error
+		show_error $result
 	} else {
 		add_handle ec "handle $result nodename $::init_nodename cookie $::init_cookie"
 	}
@@ -211,7 +211,7 @@ proc do_regsend {} {
 			set xb [dict get $::Handles xb $::regsend_xbhandle handle]
 			etclface::reg_send $ec $fd $::regsend_server $xb
 			} result ] {
-		tk_messageBox -type ok -message $result -icon error
+		show_error $result
 	}
 	destroy .form_regsend
 }
@@ -225,7 +225,7 @@ proc do_xbuff {} {
 			} else {
 				etclface::xb_new
 			} } result ] {
-		tk_messageBox -type ok -message $result -icon error
+		show_error $result
 	} else {
 		add_handle xb "handle $result"
 	}
