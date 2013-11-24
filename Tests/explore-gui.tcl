@@ -52,7 +52,7 @@ proc new_form {name descr formproc actionproc} {
 	# let's be brutal!
 	catch [destroy $root]
 
-	toplevel ${root} 
+	toplevel ${root}
 	wm title ${root} $descr
 
 	if [catch "$formproc $root"] {
@@ -60,8 +60,8 @@ proc new_form {name descr formproc actionproc} {
 		return
 	}
 
-	button	${root}.ok	-text OK	-command $actionproc
-	button	${root}.cancel	-text Cancel	-command "destroy ${root}"
+	ttk::button	${root}.ok	-text OK	-command $actionproc
+	ttk::button	${root}.cancel	-text Cancel	-command "destroy ${root}"
 	grid ${root}.ok ${root}.cancel
 }
 
@@ -72,7 +72,7 @@ proc check_handle {type root handle_var} {
 		tk_messageBox -type ok -message "No ${type} handles found."
 		return -code error
 	}
-	label	${root}.${type}_lab_handle -text "$type Handle"
+	ttk::label	${root}.${type}_lab_handle -text "$type Handle"
 	set handlelist [dict keys [dict get $::Handles $type] ${type}*]
 	set $handle_var [lindex $handlelist 0]
 	tk_optionMenu ${root}.${type}_mb_handle $handle_var {*}$handlelist
@@ -85,8 +85,8 @@ proc check_handle {type root handle_var} {
 proc form_conn {root} {
 	if [catch {check_handle ec $root ::conn_echandle}] { return -code error}
 
-	label	${root}.lab_nodename -text "Remote Node"
-	entry	${root}.ent_nodename -textvariable ::conn_nodename
+	ttk::label	${root}.lab_nodename -text "Remote Node"
+	ttk::entry	${root}.ent_nodename -textvariable ::conn_nodename
 
 	grid ${root}.ec_lab_handle ${root}.ec_mb_handle
 	grid ${root}.lab_nodename ${root}.ent_nodename
@@ -99,11 +99,11 @@ proc form_encode {root} {
 	set typelist {atom boolean char empty_list list_header long string tuple_header}
 	if [catch {check_handle xb $root ::encode_xbhandle}] { return -code error}
 
-	label ${root}.lab_type -text "Term type"
-	tk_optionMenu ${root}.mb_type ::encode_type {*}$typelist
+	ttk::label	${root}.lab_type -text "Term type"
+	tk_optionMenu	${root}.mb_type ::encode_type {*}$typelist
 
-	label	${root}.lab_value -text "Term value/arity"
-	entry	${root}.ent_value -textvariable ::encode_value
+	ttk::label	${root}.lab_value -text "Term value/arity"
+	ttk::entry	${root}.ent_value -textvariable ::encode_value
 
 	grid ${root}.xb_lab_handle ${root}.xb_mb_handle
 	grid ${root}.lab_type ${root}.mb_type
@@ -114,12 +114,12 @@ proc form_encode {root} {
 # collect parameters for etclface::init
 # - this is expected to be called from within new_form
 proc form_init {root} {
-	label	${root}.lab_node -text "nodename"
-	entry	${root}.ent_node -textvariable ::init_nodename -validate all
+	ttk::label	${root}.lab_node -text "nodename"
+	ttk::entry	${root}.ent_node -textvariable ::init_nodename -validate all
 	grid ${root}.lab_node ${root}.ent_node
 
-	label	${root}.lab_cookie -text "cookie"
-	entry	${root}.ent_cookie -textvariable ::init_cookie -validate all
+	ttk::label	${root}.lab_cookie -text "cookie"
+	ttk::entry	${root}.ent_cookie -textvariable ::init_cookie -validate all
 	grid ${root}.lab_cookie ${root}.ent_cookie
 }
 
@@ -130,8 +130,8 @@ proc form_regsend {root} {
 	if [catch {check_handle ec $root ::regsend_echandle}] { return -code error}
 	if [catch {check_handle fd $root ::regsend_fdhandle}] { return -code error}
 
-	label	${root}.lab_server -text "Remote process name"
-	entry	${root}.ent_server -textvariable ::regsend_server
+	ttk::label ${root}.lab_server -text "Remote process name"
+	ttk::entry ${root}.ent_server -textvariable ::regsend_server
 	if [catch {check_handle xb $root ::regsend_xbhandle}] { return -code error}
 
 	grid ${root}.ec_lab_handle ${root}.ec_mb_handle
@@ -144,9 +144,7 @@ proc form_regsend {root} {
 # collect parameters for etclface::xb_new
 # - this is expected to be called from within new_form
 proc form_xbuff {root} {
-	##label		${root}.lab_version -text ""
-	checkbutton	${root}.ckb_version -text "with version" -variable ::xbuff_withversion
-	##grid ${root}.lab_version ${root}.ckb_version
+	ttk::checkbutton ${root}.ckb_version -text "with version" -variable ::xbuff_withversion
 	grid ${root}.ckb_version -columnspan 2
 }
 
@@ -164,7 +162,7 @@ proc do_conn {} {
 			} result] {
 		show_error $result
 	} else {
-		
+
 		add_handle fd "fd $fd chan $ch echandle $::conn_echandle nodename $::conn_nodename"
 	}
 	destroy .form_conn
@@ -246,23 +244,12 @@ proc add_handle {type data} {
 	set index [dict get $::Handles $type index]
 	# name is ec1, ec2, pid4, etc
 	set name ${type}${index}
-	# save the handle (e.g. ec0x1234) and the data
+	# save the data
 	dict set ::Handles $type $name [dict create {*}$data]
 	diag "add_handle: $::Handles"
 }
 
-proc handles {} {
-	if {[llength [dict keys $::Handles]] == 0} {
-		tk_messageBox -type ok -message "You have not created any handles yet."
-		return
-	}
-
-	set root .hantree
-	# let's be brutal!
-	catch [destroy $root]
-	toplevel ${root}
-	wm title ${root} {Handles}
-
+proc hantree_init {root row col} {
 	set tree ${root}.tree
 	set hbar ${root}.hbar
 	set vbar ${root}.vbar
@@ -272,23 +259,38 @@ proc handles {} {
 	ttk::scrollbar $vbar -orient vertical	-command "$tree yview"
 	ttk::scrollbar $hbar -orient horizontal	-command "$tree xview"
 
-	grid $tree -row 0 -column 0 -sticky nsew
-	grid $vbar -row 0 -column 1 -sticky ns
-	grid $hbar -row 1 -column 0 -sticky ew
+	grid $tree -row [expr $row+0] -column [expr $col+0] -sticky nsew
+	grid $vbar -row [expr $row+0] -column [expr $col+1] -sticky ns
+	grid $hbar -row [expr $row+1] -column [expr $col+0] -sticky ew
 
-	grid columnconfigure	$root 0 -weight 1
-	grid rowconfigure	$root 0 -weight 1
+	grid columnconfigure	$root $col -weight 1
+	grid rowconfigure	$root $row -weight 1
+}
 
+proc hantree_refresh {root} {
+	set tree ${root}.tree
 	foreach hantype [lsort [dict keys $::Handles]] {
-		$tree insert {} end -id $hantype -open true -text $hantype
-		$tree insert $hantype end -id ${hantype}_index -open true -text index \
-			-values [dict get $::Handles $hantype index]
+		if {![$tree exists $hantype]} {
+			$tree insert {} end -id $hantype -open true -text $hantype
+		}
+		if [$tree exists ${hantype}_index] {
+			$tree item ${hantype}_index -values [dict get $::Handles $hantype index]
+		} else {
+			$tree insert $hantype end -id ${hantype}_index -open true -text index \
+				-values [dict get $::Handles $hantype index]
+		}
 		set handlelist [dict keys [dict get $::Handles $hantype] ${hantype}*]
 		foreach handle [lsort $handlelist] {
-			$tree insert $hantype end -id $handle -open true -text $handle
+			if {![$tree exists $handle]} {
+				$tree insert $hantype end -id $handle -open true -text $handle
+			}
 			set handata [dict get $::Handles $hantype $handle]
 			foreach hanpar [lsort [dict keys $handata]] {
-				$tree insert $handle end -id ${handle}_${hanpar} -text $hanpar -value [dict get $handata $hanpar]
+				if [$tree exists ${handle}_${hanpar}] {
+					$tree item ${handle}_${hanpar} -values [dict get $handata $hanpar]
+				} else {
+					$tree insert $handle end -id ${handle}_${hanpar} -text $hanpar -value [dict get $handata $hanpar]
+				}
 			}
 		}
 	}
@@ -296,6 +298,21 @@ proc handles {} {
 
 #  MAIN  ##########################
 
+# main window has a quit button at top right and a tabbed window underneth
+
+grid [ttk::button .quit -text QUIT -command exit] -sticky e
+grid [ttk::separator .hsep -orient horizontal] -sticky ew
+
+# single tabbed notebook will contain everything
+grid [ttk::notebook .nb] -sticky nsew
+ttk::notebook::enableTraversal .nb
+
+# let the notebook stretch with the window
+grid columnconfigure	. 0 -weight 1
+grid rowconfigure	. 2 -weight 1
+
+# all command buttons are in one frame
+set cf [ttk::frame .commandframe]
 array set commands {
 	conn	"Connection Form"
 	encode	"Encode a term"
@@ -303,17 +320,23 @@ array set commands {
 	regsend	"Registered Send Form"
 	xbuff	"x_buff Form"
 }
-
-# buttons for form-based commands
-set buttons {}
 foreach name [lsort [array names commands]] {
-	button .$name -text $name -command "new_form form_${name} {$commands($name)} form_$name do_$name"
-	lappend buttons .$name
-} 
-# ad hoc buttons
-button .handles	-text Handles	-command handles
-button .quit	-text Quit	-command exit
+	set cfnb $cf.${name}_b
+	set cfnl $cf.${name}_l
+	ttk::button $cfnb -text $name -command "new_form form_${name} {$commands($name)} form_$name do_$name"
+	ttk::label $cfnl -text $commands($name)
+	grid $cfnb $cfnl
+	grid $cfnb -sticky ew
+	grid $cfnl -sticky w
+}
+.nb add $cf -text Commands
 
-# show everything left to right in one row
-grid {*}[lsort $buttons] .handles .quit
+#
+# The Handles data structure is shown in its own notebook tab
+set hf [ttk::frame .handleframe]
+grid [ttk::button $hf.refresh -text Refresh -command "hantree_refresh $hf"] -sticky w
+grid [ttk::separator $hf.sep -orient horizontal] -sticky ew
+hantree_init $hf 2 0
+
+.nb add $hf -text Handles -sticky nsew
 
