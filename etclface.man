@@ -1,0 +1,467 @@
+[manpage_begin etclface 3tcl 0.1]
+[copyright {2013 Fred Youhanaie}]
+[moddesc {Erlang/Tcl Interface}]
+[titledesc {An Erlang/Tcl Interface}]
+[require Tcl 8.5]
+[description]
+
+The [package etclface] etclface exposes most of the Erlang's [term erl_interface]
+functions to the tcl scripts allowing them to communicate with other erlang,
+or even etclface based, nodes.
+
+The interface provides access to the [term erl_interface] communication
+and erlang external data manipulation functions. A Tcl script using
+[term etclface] will almost look like its equivalent written in [term C],
+but it is intended to feel natural for the Tcl programmer.
+
+In the present implementation the interface commands have their equivalent
+in the [term C] version, however, in (near) future a higher level set
+of Tcl commands will be added to provide a higher level convenient
+functions, such as encoding or decoding composite terms in a single step
+rather than calling encode or decode successively.
+
+It is expected that the reader is familiar with Tcl, Erlang and [term erl_interface].
+
+[section {Data Handling}]
+
+[subsection {Data Types}]
+
+At present the conversion of compound data type between Erlang and Tcl
+types can only be achieved individually. That is, one can only
+encode/decode the elements of an Erlang list or tuple one term at a
+time. In future higher level commands will perform the conversion in
+one step, in which case both lists and tuples in Erlang will be seen as
+lists in Tcl.
+
+[para]
+
+As for the simple types:
+
+[list_begin item]
+[item]
+Erlang numbers (floats and integers) are converted to/from their
+equivalent in Tcl.
+[item]
+Erlang strings and atoms are equivalent to Tcl strings.
+[item]
+The atoms [const true] and [const false] can be treated as strings in Tcl,
+or as booleans 1 and 0, depending on how they are decoded. Although,
+the strings true/false in Tcl can act as boolean.
+[item]
+In Tcl, true/false, yes/no, on/off and 0/1 can all be interpreted as a
+boolean when encoding a boolean.
+[list_end]
+
+There are also some Erlang data types that do not have an equivalent in
+Tcl, these are managed as C structures in etclface and accessed in Tcl
+via opaque handles. The types are:
+
+[list_begin definitions]
+[def [const pid]]
+Erlang Pid normally received with incoming messages.
+[def [const ref]]
+Erlang References are locally unique numbers that can be created locally
+or received in a message.
+[def [const xb]]
+An [term x_buff] is a buffer structure that can contain arbitrary Erlang
+terms, and can be expanded dynamically.
+[list_end]
+
+There are other [term erl_interface] specific external data types that
+presently are not recognised by [term etclface], but may be catered for
+in future versions. These types are: bignum, binary, fun, port and
+trace token.
+
+[subsection {Data Buffers}]
+
+All data communicated between cnodes are handled through [const x_buff]
+buffers.
+
+These are dynamically expanding C structures with an index that points
+to the next position where terms will be encoded into or decoded from.
+
+The index is initially zero when the buffer is first created with
+[cmd etclface::xb_new] or reset with [cmd etclface::xb_reset].
+
+Buffers can be created with the version magic token when first created.
+
+With each decode or encode command the index moves to the position of
+the next term in the buffer.
+
+A newly received buffer will contain the version magic token at
+the start of the buffer, this token needs to be extracted with
+[cmd etclface::decode_version] before further terms can be extracted.
+
+The buffers are destroyed with [cmd etclface::xb_free]. 
+
+[section {COMMANDS}]
+
+All the commands are in the [namespace ::etclface] namespace.
+
+[vset ec "[term ec] is the [term ei_cnode] structure obtained from a
+prior call to [cmd etclface::init] or [cmd etclface::xinit]."]
+[vset timeout "[term timeout] is an optional timeout in milliseconds."]
+
+[list_begin definitions]
+
+[call [cmd etclface::accept] [arg ec] [arg port] [arg [opt timeout]]]
+
+Wait for and accept a connection from another node.
+
+[vset ec]
+
+[term port] is the port number that has been registered with [term epmd]
+via [cmd etclface::publish].
+
+[vset timeout]
+
+[para]
+
+if successful the command will return an array/dictionary with three
+keys as follows:
+[list_begin definitions]
+[def [const fd]]
+This is the file descriptor of the connection which can be used in a
+subsequent [cmd etclface::receive] command.
+[def [const nodename]]
+This is the nodename of the connecting node.
+[def [const nodeaddr]]
+This is the IP address of the connecting node.
+[list_end]
+
+[call [cmd etclface::connect] [arg ec] [arg nodename] [arg [opt timeout]]]
+
+Establish a connection to another node.
+[vset ec]
+[term nodename] is the name of the node to connect to.
+[vset timeout]
+
+[call [cmd etclface::decode_atom] [arg xb]]
+
+Extract the next term in [term xb] as an atom. If successful the atom
+is returned as a string, otherwise error is flagged.
+
+[call [cmd etclface::decode_boolean] [arg xb]]
+
+Extract the next term in [term xb] as a boolean. If successful a 0 or
+1 is returned, otherwise error is flagged.
+
+[call [cmd etclface::decode_char] [arg xb]]
+
+Extract the next term in [term xb] as a char. If successful an integer
+in the range 0-255 is returned, otherwise error is flagged.
+
+[call [cmd etclface::decode_double] [arg xb]]
+
+Extract the next term in [term xb] as a double. If successful the
+floating-point number is returned, otherwise error is flagged.
+
+[call [cmd etclface::decode_list] [arg xb]]
+
+Interpret the next term in [term xb] as a list. If successful the arity
+of the list is returned, otherwise error is flagged.
+
+[call [cmd etclface::decode_long] [arg xb]]
+
+Extract the next term in [term xb] as a long integer. If successful the
+integer is returned, otherwise error is flagged.
+
+[call [cmd etclface::decode_pid] [arg xb]]
+
+Extract the next term in [term xb] as a [term pid]. If successful the
+[term pid] handle is returned, otherwise error is flagged.
+
+[call [cmd etclface::decode_ref] [arg xb]]
+
+Extract the next term in [term xb] as a [term ref]. If successful the
+[term ref] handle is returned, otherwise error is flagged.
+
+[call [cmd etclface::decode_string] [arg xb]]
+
+Extract the next term in [term xb] as a [term string]. If successful
+the string is returned, otherwise error is flagged.
+
+[call [cmd etclface::decode_term] [arg xb]]
+
+Check and if possible extract the next term in [term xb]. If successful
+a dictionary is returned with the contents that depend on the type of
+term extracted.
+The key [const type] will provide the type of the term extracted.
+The key [const size], if type is [const string] or [const binary],
+will contain the size in bytes.
+The key [const arity], if type is list or tuple, will contain the arity
+of the term.
+The key [const value], if type is not a list, tuple, string or binary,
+will contain a suitable value for the extracted term.
+
+[para]
+
+Note that for lists, tuples, strings and binaries, the data will need
+to be extracted separately using the appropriate command.
+
+[call [cmd etclface::decode_tuple] [arg xb]]
+
+Interpret the next term in [term xb] as a tuple. If successful the arity
+of the tuple is returned, otherwise error is flagged.
+
+[call [cmd etclface::decode_version] [arg xb]]
+
+Extract the next term in [term xb] as a version. This will always need
+to be performed at the start of the buffer for all received messages.
+
+[call [cmd etclface::disconnect] [arg fd]]
+
+This command disconnects an existing connection by closing the file
+descriptor [term fd]. After this command the file descriptor should not
+be used.
+
+[call [cmd etclface::ec_free] [arg ec]]
+
+This command frees up the memory taken up by [term ec]. After this command
+[term ec] should not be used.
+[vset ec]
+
+[call [cmd etclface::ec_show] [arg ec]]
+
+Returns the contents of the [const ei_cnode] structure as a dictionary.
+[vset ec]
+The dictionary will have the following fields:
+[list_begin definitions]
+[def [const nodename]] The nodename, e.g. erlnode@host.domain.com.
+[def [const alivename]] The first part of the nodename.
+[def [const hostname]] The hostname, the second part of the nodename.
+[def [const cookie]] The "secret" cookie.
+[def [const self]] The pid of the process.
+[def [const creation]] The [const creation] value of the cnode, currently
+always zero.
+[list_end]
+
+[call [cmd etclface::encode_atom] [arg xb] [arg atom]]
+
+The string [term atom] is encoded into the next position in [term xb].
+
+[call [cmd etclface::encode_boolean] [arg xb] [arg boolean]]
+
+The boolean value [term boolean] is encoded into the next position in
+[term xb]. [term boolean] should be valid Tcl boolean, i.e. one of 1,
+true, yes, on, 0, false, no, off.
+
+[call [cmd etclface::encode_char] [arg xb] [arg char]]
+
+The integer value [term char] is encoded into the next position in
+[term xb]. [term char] must be in the range 0-255.
+
+[call [cmd etclface::encode_double] [arg xb] [arg double]]
+
+The floating-point value [term double] is encoded into the next position
+in [term xb].
+
+[call [cmd etclface::encode_empty_list] [arg xb]]
+
+Closes off a term of type list that would have started with an
+[cmd etclface::encode_list_header].
+
+[call [cmd etclface::encode_list_header] [arg xb] [arg arity]]
+
+Starts the encoding of a list into the next position in [term xb].
+[term arity] defines the number of terms to be encoded.
+
+[call [cmd etclface::encode_long] [arg xb] [arg long]]
+
+The integer value [term long] is encoded into the next position in
+[term xb].
+
+[call [cmd etclface::encode_pid] [arg xb] [arg pid]]
+
+The pid represented by the handle [term pid] is encoded into the next
+position in [term xb].
+
+[call [cmd etclface::encode_ref] [arg xb] [arg ref]]
+
+The reference represented by the handle [term ref] is encoded into the
+next position in [term xb].
+
+[call [cmd etclface::encode_string] [arg xb] [arg string]]
+
+The string [term string] is encoded into the next position in [term xb].
+
+[call [cmd etclface::encode_tuple_header] [arg xb] [arg arity]]
+
+Starts the encoding of a tuple of arity [term arity] into the next
+position in [term xb].
+
+[call [cmd etclface::init] [arg nodename] [arg [opt cookie]]]
+
+Initialize an [term ei_cnode] with name [term nodename] and cookie
+[term cookie], if supplied, otherwise the file [file .erlang.cookie]
+in user's home directory will be consulted to obtain a cookie.
+If successful, an [term ec] handle will be returned.
+
+[call [cmd etclface::listen] [arg fd] [arg backlog]]
+
+This command will invoke the [cmd listen] system call for the socket
+file descriptor [term fd].
+[term fd] is the file descriptor return by the [cmd etclface::socket]
+command.
+[term backlog] is the maximum number of client that are allowed to wait
+for a connection to be accepted by us.
+See the [cmd listen(20)] man page for further details.
+
+[call [cmd etclface::make_chan] [arg fd] [arg flag]]
+
+Takes an existing open file descriptor [term fd] and returns a Tcl
+channel name for it. [term flag] is one of [const R], [const W] or
+[const RW].
+
+The returned channel name can then be used in the Tcl [cmd chan] commands.
+
+[call [cmd etclface::make_ref] [arg ec]]
+
+Creates a unique reference based on the supplied [term ec]. A handle
+for the ref is returned.
+[vset ec]
+
+[call [cmd etclface::nodename] [arg ec]]
+
+Return the nodename embedded in [term ec].
+[vset ec]
+
+[call [cmd etclface::pid_show] [arg pid]]
+
+The details of the pid handle [term pid] are returned as a dictionary. The
+dictionary will contain four elements with keys:
+[const node], [const num], [const serial] and [const creation].
+
+[call [cmd etclface::publish] [arg ec] [arg port] [arg [opt timeout]]]
+
+Registers the node defined by [term ec] and port [term port] with the
+local epmd. [term port] should be the same as that supplied to an earlier
+call to [cmd etclface::socket] command.
+[vset ec]
+[vset timeout]
+
+[call [cmd etclface::receive] [arg fd] [arg xb] [arg [opt timeout]]]
+
+Waits for a message on file descriptor [term fd] for up to [term timeout]
+milliseconds, or indefinitely if [term timeout] is missing. [term fd] is
+the file descriptor returned by an earlier call to one of
+[cmd etclface::connect], [cmd etclface::xconnect] or [cmd etclface::accept].
+
+If a keep alive message is received the string [const TICK] is returned.
+
+Otherwise, if no error, the message meta data will be returned as a
+dictionary, and, depending on the message type, [term xb] may contain
+message data.
+
+[comment {TODO list the message types}]
+
+[call [cmd etclface::reg_send] [arg ec] [arg fd] [arg server] [arg xb] [arg [opt timeout]]]
+
+Send a single message encoded in [term xb] to a registered process,
+[term server], on a node that we are connected to via the file descriptor
+[term fd].
+[vset ec]
+[vset timeout]
+
+[call [cmd etclface::self] [arg ec]]
+
+Return the pid handle embedded in the [term ei_cnode] structure [term ec].
+[vset ec]
+
+[call [cmd etclface::send] [arg fd] [arg pid] [arg xb] [arg [opt timeout]]]
+
+Send a single message encoded in [term xb] to a process [term pid]
+on a node that we are connected to via the file descriptor [term fd].
+[vset timeout]
+
+[call [cmd etclface::socket] [arg addr] [arg port]]
+
+Creates a TCP socket for the [term addr] and [term port] and binds to
+it. The socket will be used for accepting connections from other nodes.
+If [term addr] is a [const -], then the socket will accept connection
+on all interfaces. If successful, the file descriptor of the socket will
+be returned.
+
+[call [cmd etclface::tracelevel] [arg [opt level]]]
+
+The [const ei] trace level of [term erl_interface] is set to [term level]
+and the new level is returned.
+If [term level] is missing, then the current trace level is displayed.
+Note that the trace level can also be set through the environment
+variable [const EI_TRACELEVEL].
+
+[call [cmd etclface::xb_free] [arg xb]]
+
+Frees up the memory taken up by [term xb] and the dynamic buffer pointed
+to by [term xb].
+
+[call [cmd etclface::xb_new] [arg [opt [const -withversion]]]]
+
+Creates a new [const x_buff] and returns an [const xb] handle.
+The buffer can be encoded with the version magic number by adding
+[const -withversion] to the command.
+
+[call [cmd etclface::xb_print] [arg xb]]
+
+Returns the contents of the buffer [term x] in a readable format.
+
+[call [cmd etclface::xb_reset] [arg xb]]
+
+Resets the buffer index to 0. This is always required when beginning to
+extract/decode the contents of a buffer.
+
+[call [cmd etclface::xb_show] [arg xb]]
+
+Returns the contents of an [const x_buff] structure as a dictionary.
+The command is mainly provided for troubleshooting encode/decode commands.
+
+[call [cmd etclface::xb_skip] [arg xb]]
+
+Skip over the next term in [term xb].
+
+[call [cmd etclface::xconnect] [arg ec] [arg ipaddr] [arg alivename] [arg [opt timeout]]]
+
+Establish a connection to another node.
+[vset ec]
+[term ipaddr] is the IP address of the remote node.
+[term alivename] is the first part of the remote node name.
+[vset timeout]
+
+[call [cmd etclface::xinit] [arg hostname] [arg alivename] [arg nodename] [arg ipaddr] [arg [opt cookie]]]
+
+Initialize an [term ei_cnode] with [term alivename] and [term hostname]
+as the first and the second parts of the node name.
+
+[term nodename] is the full nodename used for identifying this node.
+
+[term ipaddr] is the IP address of this node. However, inspecting the
+erl_interface source code shows that it is not being used! So, using
+0.0.0.0 here should be safe.
+
+[term cookie], if supplied, will be used for this node, otherwise the
+file [file .erlang.cookie] in user's home directory will be consulted
+to obtain a cookie.
+
+If successful, an [term ec] handle will be returned.
+
+[list_end]
+
+[section {EXAMPLES}]
+
+[subsection {Simple client}]
+
+Here we send a message with a single atom, "hello", to a registered
+process, "server1", on the erlang node "erlnode@localhost". To keep the
+example simple we do not check for any errors!
+
+[example_begin]
+package require etclface
+set ec [lb]etclface::init etfnode secretcookie[rb]
+set fd [lb]etclface::connect $ec erlnode@localhost[rb]
+set xb [lb]etclface::xb_new -withversion[rb]
+etclface::encode_atom $xb hello
+etclface::reg_send $ec $fd server1 $xb
+[example_end]
+
+[manpage_end]
+
