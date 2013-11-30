@@ -55,6 +55,7 @@ The \etf commands are collected in a number of groups.
 @<Buffer commands@>;
 @<Encode commands@>;
 @<Decode commands@>;
+@<Data handling commands@>;
 @<Utility commands@>;
 @<AppInit@>;
 
@@ -121,6 +122,8 @@ static Tcl_ObjCmdProc	Etclface_encode_atom, Etclface_encode_boolean, Etclface_en
 			Etclface_encode_list_header, Etclface_encode_long, Etclface_encode_pid,
 			Etclface_encode_ref, Etclface_encode_string, Etclface_encode_tuple_header;
 @#
+static Tcl_ObjCmdProc	Etclface_ref_free, Etclface_ref_new, Etclface_ref_print, Etclface_ref_show;
+@#
 static Tcl_ObjCmdProc	Etclface_xb_free, Etclface_xb_new, Etclface_xb_print, Etclface_xb_reset,
 			Etclface_xb_show, Etclface_xb_skip;
 @#
@@ -168,6 +171,10 @@ static EtclfaceCommand_t EtclfaceCommand[] = {@/
 	{"etclface::pid_show", Etclface_pid_show},@/
 	{"etclface::publish", Etclface_publish},@/
 	{"etclface::receive", Etclface_receive},@/
+	{"etclface::ref_free", Etclface_ref_free},@/
+	{"etclface::ref_new", Etclface_ref_new},@/
+	{"etclface::ref_print", Etclface_ref_print},@/
+	{"etclface::ref_show", Etclface_ref_show},@/
 	{"etclface::reg_send", Etclface_reg_send},@/
 	{"etclface::self", Etclface_self},@/
 	{"etclface::send", Etclface_send},@/
@@ -181,6 +188,7 @@ static EtclfaceCommand_t EtclfaceCommand[] = {@/
 	{"etclface::xb_skip", Etclface_xb_skip},@/
 	{"etclface::xconnect", Etclface_xconnect},@/
 	{"etclface::xinit", Etclface_xinit},@/
+
 @#
 	{NULL, NULL}	/* marks the end of the list*/
 };
@@ -1865,6 +1873,130 @@ Etclface_decode_version(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const 
 	return TCL_OK;
 }
 
+@*1Data Handling Commands.
+
+These commands are primarily for handling opaque data structures. For
+each opaque data type, we have a set of commands to create, destroy and
+display the contents of the structure.
+
+The same naming convention is used across all data types: \.{X\_new}
+will create a new instance of type X, \.{X\_free} will free up memory
+allocated to that instance of X, \.{X\_show} will return the contents as
+a dictionary and \.{X\_print} will produce a stringified version of the
+contents in a format similar to that found in Erlang. The latter can be
+used to compare two instances of a data type for equality.
+
+@ \.{etclface::ref\_new ec}.
+
+Create a unique erlang reference for the node in \.{bf}. Here we use
+the system clock time in seconds and micro-seconds for the first two,
+and the random number for the third.
+
+@<Data handling commands@>=
+static int
+Etclface_ref_new(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+{
+	ei_cnode	*ec;
+	Tcl_Time	t;
+	erlang_ref	*ref;
+
+	if (objc != 2) {
+		Tcl_WrongNumArgs(ti, 1, objv, "ec");
+		return TCL_ERROR;
+	}
+
+	if (get_ec(ti, objv[1], &ec) == TCL_ERROR)
+		return TCL_ERROR;
+
+	ref = (erlang_ref *)Tcl_AttemptAlloc(sizeof(erlang_ref));
+	if (ref == NULL) {
+		ErrorReturn(ti, "ERROR", "Could not allocate memory for ref", 0);
+		return TCL_ERROR;
+	}
+
+	Tcl_GetTime(&t);
+	strcpy(ref->node, ei_thisnodename(ec));
+	ref->n[0]	= t.usec & 0xffff ;
+	ref->n[1]	= t.sec;
+	ref->n[2]	= random();
+	ref->len	= 3;
+	ref->creation	= 0;
+
+	Tcl_SetObjResult(ti, Tcl_ObjPrintf("ref0x%x", ref));
+
+	return TCL_OK;
+}
+
+@ \.{etclface::ref\_free ref}.
+
+Free up memory allocated to a reference object.
+
+@<Data handling commands@>=
+static int
+Etclface_ref_free(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+{
+	erlang_ref *ref;
+
+	if (objc != 2) {
+		Tcl_WrongNumArgs(ti, 1, objv, "ref");
+		return TCL_ERROR;
+	}
+
+	if (get_ref(ti, objv[1], &ref) == TCL_ERROR)
+		return TCL_ERROR;
+
+	Tcl_Free((char *)ref);
+
+	return TCL_OK;
+}
+
+@ \.{etclface::ref\_print ref}.
+
+Return the stringified version of the contents of the reference.
+
+@<Data handling commands@>=
+static int
+Etclface_ref_print(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+{
+	erlang_ref *ref;
+
+	if (objc != 2) {
+		Tcl_WrongNumArgs(ti, 1, objv, "ref");
+		return TCL_ERROR;
+	}
+
+	if (get_ref(ti, objv[1], &ref) == TCL_ERROR)
+		return TCL_ERROR;
+
+	Tcl_SetObjResult(ti, Tcl_ObjPrintf("#Ref<%s.%d.%d.%d.%d>", ref->node,
+		ref->n[0], ref->n[1], ref->n[2], ref->creation));
+
+	return TCL_OK;
+}
+
+@ \.{etclface::ref\_show ref}.
+
+Return the contents of ref as a dictionary.
+
+@<Data handling commands@>=
+static int
+Etclface_ref_show(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
+{
+	erlang_ref *ref;
+
+	if (objc != 2) {
+		Tcl_WrongNumArgs(ti, 1, objv, "ref");
+		return TCL_ERROR;
+	}
+
+	if (get_ref(ti, objv[1], &ref) == TCL_ERROR)
+		return TCL_ERROR;
+
+	Tcl_SetObjResult(ti, ref2dict(ti, ref));
+
+	return TCL_OK;
+}
+
 @*1Utility Commands.
 These are various commands for accessing the \.{ei\_cnode} data structures.
 
@@ -2166,6 +2298,22 @@ pid2dict(Tcl_Interp *ti, erlang_pid *pid) {
 	Tcl_DictObjPut(ti, piddict, Tcl_NewStringObj("creation", -1), Tcl_NewIntObj(pid->creation));
 
 	return piddict;
+}
+
+@ \.{ref2dict}. Given a valid ref pointer, convert its contents to a dictionary.
+
+@<Internal helper functions@>=
+static Tcl_Obj*
+ref2dict(Tcl_Interp *ti, erlang_ref *ref) {
+	Tcl_Obj *refdict = Tcl_NewDictObj();
+
+	Tcl_DictObjPut(ti, refdict, Tcl_NewStringObj("node", -1), Tcl_NewStringObj(ref->node, -1));
+	Tcl_DictObjPut(ti, refdict, Tcl_NewStringObj("creation", -1), Tcl_NewIntObj(ref->creation));
+	Tcl_DictObjPut(ti, refdict, Tcl_NewStringObj("n0", -1), Tcl_NewIntObj(ref->n[0]));
+	Tcl_DictObjPut(ti, refdict, Tcl_NewStringObj("n1", -1), Tcl_NewIntObj(ref->n[1]));
+	Tcl_DictObjPut(ti, refdict, Tcl_NewStringObj("n2", -1), Tcl_NewIntObj(ref->n[2]));
+
+	return refdict;
 }
 
 @ \.{ec2dict}. Given a valid ec pointer, convert its contents to a dictionary.

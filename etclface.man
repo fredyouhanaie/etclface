@@ -315,12 +315,6 @@ channel name for it. [term flag] is one of [const R], [const W] or
 
 The returned channel name can then be used in the Tcl [cmd chan] commands.
 
-[call [cmd etclface::make_ref] [arg ec]]
-
-Creates a unique reference based on the supplied [term ec]. A handle
-for the ref is returned.
-[vset ec]
-
 [call [cmd etclface::nodename] [arg ec]]
 
 Return the nodename embedded in [term ec].
@@ -354,6 +348,27 @@ dictionary, and, depending on the message type, [term xb] may contain
 message data.
 
 [comment {TODO list the message types}]
+
+[call [cmd etclface::ref_free] [arg ref]]
+
+Free up memory allocated to [term ref]. [cmd ref_free] should not be
+called on the same ref handle twice.
+
+[call [cmd etclface::ref_new] [arg ec]]
+
+Creates a unique reference based on the supplied [term ec]. A handle
+for the ref is returned.
+[vset ec]
+
+[call [cmd etclface::ref_print] [arg ref]]
+
+Returns the stringified version of the contents of [term ref].
+This can be used to check if two references are identical.
+
+[call [cmd etclface::ref_show] [arg ref]]
+
+Return the contents of the reference [term ref] as a dictionary.
+The main use of this command is for troubleshooting.
 
 [call [cmd etclface::reg_send] [arg ec] [arg fd] [arg server] [arg xb] [arg [opt timeout]]]
 
