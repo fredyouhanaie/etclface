@@ -1646,11 +1646,6 @@ Etclface_decode_ref(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv
 	return TCL_OK;
 }
 
-@ \.{etclface::decode\_ref xb}.
-
-Assuming that the next term in \.{xb} is a ref, extract it and return it
-as a ref handle.
-
 @ \.{etclface::decode\_string xb}.
 
 Assuming that the next term in \.{xb} is a string, extract it and return
