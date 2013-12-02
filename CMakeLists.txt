@@ -76,15 +76,22 @@ set_directory_properties (PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${files_to_cle
 
 set (CMAKE_SKIP_RPATH TRUE) # No RPATH please!
 #
-add_definitions (-DUSE_TCL_STUBS)
-#
 # The following were taken from
 # otp_src_R16B/lib/erl_interface/src/eidefs.mk.in
 add_definitions (-D_THREAD_SAFE -D_REENTRANT -DPOSIX_THREADS -D_POSIX_THREAD_SAFE_FUNCTIONS)
 #
 # Create a shared object (libetclface.so)
 add_library (etclface SHARED ${ETCLFACE_SRC})
-target_link_libraries (etclface ${TCL_STUB_LIBRARY} erl_interface ei pthread)
+set (extra_libs erl_interface ei pthread)
+#
+# by default allow use of Tcl Stub library, but user can change it.
+set (USE_TCL_STUBS TRUE CACHE BOOL "Use Tcl Stubs Library?")
+if (${USE_TCL_STUBS})
+	add_definitions (-DUSE_TCL_STUBS)
+	target_link_libraries (etclface ${TCL_STUB_LIBRARY} ${extra_libs})
+else (${USE_TCL_STUBS})
+	target_link_libraries (etclface ${TCL_LIBRARY} ${extra_libs})
+endif (${USE_TCL_STUBS})
 
 #
 # The C source is generated from the *.w source with the ctangle command

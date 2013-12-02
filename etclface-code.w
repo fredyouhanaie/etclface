@@ -65,14 +65,17 @@ version 8.5 or higher, This version has been around for some time now,
 so we can expect it to be available at most sites.
 
 @<AppInit@>=
+#define TCLVERSION "8.5"
 int
 Etclface_Init(Tcl_Interp *ti)
 {
-	if (Tcl_InitStubs(ti, "8.5", 0) == NULL) {
+#ifdef USE_TCL_STUBS
+	if (Tcl_InitStubs(ti, TCLVERSION, 0) == NULL) {
 		return TCL_ERROR;
 	}
+#endif
 
-	if (Tcl_PkgRequire(ti, "Tcl", "8.5", 0) == NULL) {
+	if (Tcl_PkgRequire(ti, "Tcl", TCLVERSION, 0) == NULL) {
 		return TCL_ERROR;
 	}
 
