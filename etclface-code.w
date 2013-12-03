@@ -212,6 +212,12 @@ dynamically, so it will need to be de-allocated when not needed.
 If the \.{cookie} parameter is missing, it will be obtained from
 \.{erlang.cookie} file in user's home directory.
 
+The \.{ei\_connect\_init()} and \.{ei\_connect\_xinit()} functions in
+\erliface expect a \.{creation} value to be passed from the caller. For
+now, we are setting this to zero on all calls, however, in future we
+may maintain an internal autoincremented counter for this. The reason
+behind the decision is to keep the extension simple and stateless.
+
 @ \.{etclface::init nodename ?cookie?}.
 
 Initialize and return a handle to an \.{ec} structure, with own name
@@ -1420,6 +1426,9 @@ to the next term.
 
 @ \.{etclface::decode\_atom xb}.
 
+Extract the next term from \.{xb} as an atom and, if successful, return
+it as a string.
+
 @<Decode commands@>=
 static int
 Etclface_decode_atom(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
@@ -1444,8 +1453,10 @@ Etclface_decode_atom(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const obj
 	return TCL_OK;
 }
 
-@ \.{etclface::decode\_boolean xb}. Extract the next term from \.{xb}
-as a boolean, if successful, a \.{0} or \.{1} will be returned.
+@ \.{etclface::decode\_boolean xb}.
+
+Extract the next term from \.{xb} as a boolean, if successful, a \.{0}
+or \.{1} will be returned.
 
 @<Decode commands@>=
 static int
@@ -1471,8 +1482,10 @@ Etclface_decode_boolean(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const 
 	return TCL_OK;
 }
 
-@ \.{etclface::decode\_char xb}. Extract the next term from \.{xb}
-as a char, if successful, an integer is returned.
+@ \.{etclface::decode\_char xb}.
+
+Extract the next term from \.{xb} as a char, if successful, an integer
+is returned.
 
 @<Decode commands@>=
 static int
@@ -1498,8 +1511,10 @@ Etclface_decode_char(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const obj
 	return TCL_OK;
 }
 
-@ \.{etclface::decode\_double xb}. Extract the next term from \.{xb}
-as a double, if successful, a double is returned.
+@ \.{etclface::decode\_double xb}.
+
+Extract the next term from \.{xb} as a double, if successful, a double
+is returned.
 
 @<Decode commands@>=
 static int
@@ -1525,9 +1540,11 @@ Etclface_decode_double(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const o
 	return TCL_OK;
 }
 
-@ \.{etclface::decode\_list xb}. Attempts to decode the list in \.{xb}. If
-successful, the arity of the list will be returned. It is then up to the
-caller to go through the terms of the list and decode them individually.
+@ \.{etclface::decode\_list xb}.
+
+Attempts to decode the list in \.{xb}. If successful, the arity of the
+list will be returned. It is then up to the caller to go through the
+terms of the list and decode them individually.
 
 @<Decode commands@>=
 static int
@@ -1556,6 +1573,9 @@ Etclface_decode_list(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const obj
 
 @ \.{etclface::decode\_long xb}.
 
+Extract the next term in \.{xb} as a long integer and, if successful,
+return an integer.
+
 @<Decode commands@>=
 static int
 Etclface_decode_long(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
@@ -1580,8 +1600,10 @@ Etclface_decode_long(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const obj
 	return TCL_OK;
 }
 
-@ \.{etclface::decode\_pid xb}. Extract the next term in \.{xb} as a
-pid and, if successful, return a pid handle.
+@ \.{etclface::decode\_pid xb}.
+
+Extract the next term in \.{xb} as a pid and, if successful, return a
+pid handle.
 
 @<Decode commands@>=
 static int
@@ -1812,9 +1834,11 @@ and a handle returned as the value.
 			Tcl_DictObjPut(ti, termdict, Tcl_NewStringObj("value", -1), valueobj);
 		}
 
-@ \.{etclface::decode\_tuple xb}. Attempts to decode the tuple in \.{xb}. If
-successful, the arity of the tuple will be returned. It is then up to the
-caller to go through the terms of the tuple and decode them individually.
+@ \.{etclface::decode\_tuple xb}.
+
+Attempts to decode the tuple in \.{xb}. If successful, the arity of the
+tuple will be returned. It is then up to the caller to go through the
+terms of the tuple and decode them individually.
 
 @<Decode commands@>=
 static int
