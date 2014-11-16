@@ -1,13 +1,25 @@
 
 # etclface - An Erlang/Tcl Interface
 
-This is a Tcl extension that will allow software written in Tcl and
-Erlang to communicate using the Erlang/OTP interface, `erl_interface`.
+This is a [Tcl](http://tcl.tk) extension that will allow software written
+in Tcl and [Erlang](http://www.erlang.org/) to communicate using the
+Erlang/OTP interface, `erl_interface`.
+
+## Introduction
+
+Erlang provides two native interfaces that enable communication between
+Erlang processes and external programs using Erlang's message passing
+mechanism.
+
+One of these interfaces is `erl_interface`, which allows the external
+program to register as a node in a Distributed Erlang network and exchange
+messages with Erlang processes.
 
 Some of the aims of the Tcl extension are:
 
 * Let a Tcl application use Erlang for processing.
-* Let an Erlang application use a Tcl/Tk based GUI.
+* Let an Erlang application use a Tcl/Tk based GUI, or other Tcl
+extensions such as Expect.
 
 The initial version will only expose enough `erl_interface` functions to
 allow a Tcl application to communicate with Erlang nodes.  Currently,
@@ -27,10 +39,9 @@ You will need the following software/packages:
 * Tcl/Tk 8.5 or higher
 * Erlang/OTP, R15B03 or higher
 * TeX, if producing the documentation
-* Cweb can be obtained from here:
-	[[http://www.literateprogramming.com/cweb_download.html]]
+* Cweb can be obtained from [here](http://www.literateprogramming.com/cweb_download.html)
 * cmake
-* ccmake, not mandatory, but a useful tool for editing cmake vars
+* ccmake, not mandatory, but a useful tool for editing cmake parameters
 * make
 * C compiler, GCC was used during development
 
