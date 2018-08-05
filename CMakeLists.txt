@@ -54,6 +54,10 @@ set (CWEB_SRCS
     ${CMAKE_SOURCE_DIR}/etclface-code.w
     )
 
+set (ETCLFACE_TEST_DIR
+    ${CMAKE_SOURCE_DIR}/Tests
+    )
+
 # library source, generated from *.w files
 set (ETCLFACE_SRC ${CMAKE_BINARY_DIR}/etclface.c)
 set_source_files_properties (${ETCLFACE_SRC} PROPERTIES GENERATED TRUE)
@@ -129,8 +133,15 @@ add_custom_command (
 # run the test suite
 #
 add_custom_target (tests
-    COMMAND		env LD_LIBRARY_PATH=${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/Tests/run-testsuite.tcl
-    DEPENDS		etclface
+    COMMAND		env LD_LIBRARY_PATH=${CMAKE_BINARY_DIR} ${ETCLFACE_TEST_DIR}/run-testsuite.tcl
+    DEPENDS		etclface server1
+    WORKING_DIRECTORY	${ETCLFACE_TEST_DIR}
+    )
+
+add_custom_target (server1
+    COMMAND		erlc server1.erl
+    WORKING_DIRECTORY	${ETCLFACE_TEST_DIR}
+    DEPENDS		${ETCLFACE_TEST_DIR}/server1.erl
     )
 
 #

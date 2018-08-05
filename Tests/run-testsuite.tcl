@@ -31,6 +31,17 @@ proc runtest {tname tdesc} {
 	}
 }
 
+# set up the erlang node
+set pipedir /tmp/erlnode/
+file mkdir "$pipedir"
+
+# the erlang node parameters are defined in etclface-testsuite.tcl
+set erlnodecmd "erl -sname $::remnode -setcookie $::cookie -s $::remserver"
+exec run_erl -daemon "$pipedir" "$pipedir" "exec $erlnodecmd"
+# give the node a chance to start up
+after 1000
+
+# run the tests
 foreach tname [lsort [array names all_tests {*}$argv]] {
 	runtest $tname $all_tests($tname)
 }
@@ -38,3 +49,5 @@ foreach tname [lsort [array names all_tests {*}$argv]] {
 puts {=========================}
 tcltest::cleanupTests
 
+# stop the erlang node
+exec -ignorestderr echo q(). | to_erl "$pipedir"
