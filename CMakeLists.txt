@@ -127,7 +127,7 @@ add_custom_command (
 #
 # run the test suite
 #
-add_custom_target (test 
+add_custom_target (tests
 	COMMAND		env LD_LIBRARY_PATH=${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/Tests/run-testsuite.tcl
 	DEPENDS		etclface
 )
