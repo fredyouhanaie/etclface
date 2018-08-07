@@ -40,6 +40,7 @@ The \etf commands are collected in a number of groups.
 #include <limits.h>
 #include <arpa/inet.h>
 #include <fcntl.h>
+#include <unistd.h>
 #include <tcl.h>
 #include <sys/types.h>
 #include <sys/socket.h>
