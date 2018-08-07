@@ -28,15 +28,21 @@ project (etclface C)
 # to find the ERL_ROOT directory
 #
 find_program (ERL_PROG_PATH "erl")
-get_filename_component(ERL_PATH ${ERL_PROG_PATH} PATH)
-get_filename_component(ERL_ROOT ${ERL_PATH} PATH)
-set (ERLIFACE_INC_DIR "${ERL_ROOT}/usr/include"
-    CACHE PATH "erl_interface.h include directory."
-    )
-set (ERLIFACE_LIB_DIR "${ERL_ROOT}/usr/lib"
-    CACHE PATH "erl_interface and ei lib directory."
-    )
-unset (ERL_PROG_PATH CACHE)
+if ( ${ERL_PROG_PATH} STREQUAL "ERL_PROG_PATH-NOTFOUND" )
+    message(FATAL_ERROR "erlang not in path")
+else ( ${ERL_PROG_PATH} STREQUAL "ERL_PROG_PATH-NOTFOUND" )
+    get_filename_component(ERL_PATH ${ERL_PROG_PATH} PATH)
+    get_filename_component(ERL_ROOT ${ERL_PATH} PATH)
+    set (ERLIFACE_INC_DIR "${ERL_ROOT}/usr/include"
+	CACHE PATH "erl_interface.h include directory."
+	)
+    set (ERLIFACE_LIB_DIR "${ERL_ROOT}/usr/lib"
+	CACHE PATH "erl_interface and ei lib directory."
+	)
+    unset (ERL_PROG_PATH)
+    unset (ERL_PATH)
+    unset (ERL_ROOT)
+endif ( ${ERL_PROG_PATH} STREQUAL "ERL_PROG_PATH-NOTFOUND" )
 
 find_package (TclStub REQUIRED)
 
