@@ -130,6 +130,26 @@ add_custom_command (
     )
 
 #
+# Unix style man page
+#
+set (MANSOURCE	${CMAKE_SOURCE_DIR}/etclface.man)
+set (MANFILE	${CMAKE_BINARY_DIR}/etclface.3tcl)
+#
+add_custom_target (man SOURCES ${MANSOURCE} )
+#
+add_custom_command (
+    TARGET	man
+    DEPENDS	${MANSOURCE}
+    COMMAND	dtplite	-o ${MANFILE} nroff ${MANSOURCE}
+    COMMAND	gzip -f ${MANFILE}
+    )
+#
+install (
+    FILES	${MANFILE}.gz
+    DESTINATION	${CMAKE_INSTALL_PREFIX}/man/man3
+    )
+
+#
 # run the test suite
 #
 add_custom_target (tests
