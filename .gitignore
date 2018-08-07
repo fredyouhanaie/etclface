@@ -1,3 +1,4 @@
 misc-untracked/
 build/
+_build/
 *.beam
