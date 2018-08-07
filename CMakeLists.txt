@@ -140,6 +140,7 @@ add_custom_command (
 #
 set (MANSOURCE	${CMAKE_SOURCE_DIR}/etclface.man)
 set (MANFILE	${CMAKE_BINARY_DIR}/etclface.3tcl)
+set (MANFILEGZ	${CMAKE_BINARY_DIR}/etclface.3tcl.gz)
 #
 add_custom_target (man SOURCES ${MANSOURCE} )
 #
@@ -151,7 +152,7 @@ add_custom_command (
     )
 #
 install (
-    FILES	${MANFILE}.gz
+    FILES	${MANFILEGZ}
     DESTINATION	${CMAKE_INSTALL_PREFIX}/man/man3
     )
 
