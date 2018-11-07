@@ -250,7 +250,7 @@ Etclface_init(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 		return TCL_ERROR;
 	}
 
-	Tcl_SetObjResult(ti, Tcl_ObjPrintf("ec0x%x", ec));
+	Tcl_SetObjResult(ti, Tcl_ObjPrintf("ec0x%lx", (long unsigned int)ec));
 
 	return TCL_OK;
 }
@@ -295,7 +295,7 @@ Etclface_xinit(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 		return TCL_ERROR;
 	}
 
-	Tcl_SetObjResult(ti, Tcl_ObjPrintf("ec0x%x", ec));
+	Tcl_SetObjResult(ti, Tcl_ObjPrintf("ec0x%lx", (long unsigned int)ec));
 
 	return TCL_OK;
 }
@@ -508,7 +508,8 @@ the \.{fd} is readable, writable or both, respectively.
 static int
 Etclface_make_chan(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 {
-	int		fd, flag;
+	long int	fd;
+	int		flag;
 	Tcl_Channel	chan;
 	char		*flagstr;
 
@@ -517,7 +518,7 @@ Etclface_make_chan(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[
 		return TCL_ERROR;
 	}
 
-	if (Tcl_GetIntFromObj(ti, objv[1], &fd) == TCL_ERROR)
+	if (Tcl_GetLongFromObj(ti, objv[1], &fd) == TCL_ERROR)
 		return TCL_ERROR;
 
 	if (fcntl(fd, F_GETFD) < 0) {
@@ -907,7 +908,7 @@ Etclface_xb_new(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 		return TCL_ERROR;
 	}
 
-	Tcl_SetObjResult(ti, Tcl_ObjPrintf("xb0x%x", xb));
+	Tcl_SetObjResult(ti, Tcl_ObjPrintf("xb0x%lx", (long unsigned int)xb));
 
 	return TCL_OK;
 }
@@ -966,7 +967,7 @@ Etclface_xb_show(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 		return TCL_ERROR;
 
 	Tcl_Obj *xbdict = Tcl_NewDictObj();
-	Tcl_DictObjPut(ti, xbdict, Tcl_NewStringObj("buff", -1), Tcl_ObjPrintf("0x%0x", xb->buff));
+	Tcl_DictObjPut(ti, xbdict, Tcl_NewStringObj("buff", -1), Tcl_ObjPrintf("0x%0lx", (long unsigned int)xb->buff));
 	Tcl_DictObjPut(ti, xbdict, Tcl_NewStringObj("buffsz", -1), Tcl_NewIntObj(xb->buffsz));
 	Tcl_DictObjPut(ti, xbdict, Tcl_NewStringObj("index", -1), Tcl_NewIntObj(xb->index));
 
@@ -1632,7 +1633,7 @@ Etclface_decode_pid(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv
 		return TCL_ERROR;
 	}
 
-	Tcl_SetObjResult(ti, Tcl_ObjPrintf("pid0x%x", pid));
+	Tcl_SetObjResult(ti, Tcl_ObjPrintf("pid0x%lx", (long unsigned int)pid));
 
 	return TCL_OK;
 }
@@ -1667,7 +1668,7 @@ Etclface_decode_ref(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv
 		return TCL_ERROR;
 	}
 
-	Tcl_SetObjResult(ti, Tcl_ObjPrintf("ref0x%x", ref));
+	Tcl_SetObjResult(ti, Tcl_ObjPrintf("ref0x%lx", (long unsigned int)ref));
 
 	return TCL_OK;
 }
@@ -1801,7 +1802,7 @@ and a handle returned as the value.
 				return TCL_ERROR;
 			}
 			memmove(pid, &term->value.pid, sizeof(erlang_pid));
-			valueobj = Tcl_ObjPrintf("pid0x%x", pid);
+			valueobj = Tcl_ObjPrintf("pid0x%lx", (long unsigned int)pid);
 			break;
 @#
 		case ERL_REFERENCE_EXT:
@@ -1812,7 +1813,7 @@ and a handle returned as the value.
 				return TCL_ERROR;
 			}
 			memmove(ref, &term->value.ref, sizeof(erlang_ref));
-			valueobj = Tcl_ObjPrintf("ref0x%x", ref);
+			valueobj = Tcl_ObjPrintf("ref0x%lx", (long unsigned int)ref);
 			break;
 @#
 		case ERL_PORT_EXT:@/
@@ -1945,7 +1946,7 @@ Etclface_ref_new(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 	ref->len	= 3;
 	ref->creation	= 0;
 
-	Tcl_SetObjResult(ti, Tcl_ObjPrintf("ref0x%x", ref));
+	Tcl_SetObjResult(ti, Tcl_ObjPrintf("ref0x%lx", (long unsigned int)ref));
 
 	return TCL_OK;
 }
@@ -2068,7 +2069,7 @@ Etclface_self(ClientData cd, Tcl_Interp *ti, int objc, Tcl_Obj *const objv[])
 		return TCL_ERROR;
 
 	self = ei_self(ec);
-	Tcl_SetObjResult(ti, Tcl_ObjPrintf("pid0x%x", self));
+	Tcl_SetObjResult(ti, Tcl_ObjPrintf("pid0x%lx", (long unsigned int)self));
 
 	return TCL_OK;
 }
