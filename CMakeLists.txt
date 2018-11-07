@@ -121,10 +121,10 @@ add_custom_target (doc SOURCES ${PDFFILE})
 # we need the additional env to accomodate out-of-source builds
 # Note, the trailing ':' is important
 add_custom_command (
-    OUTPUT		${PDFFILE}
-    MAIN_DEPENDENCY	${TEXFILE}
-    COMMAND		env TEXINPUTS=${CMAKE_SOURCE_DIR}: pdftex
-    ARGS		${TEXFILE}
+    OUTPUT	${PDFFILE}
+    DEPENDS	${TEXFILE}
+    COMMAND	env TEXINPUTS=${CMAKE_SOURCE_DIR}: pdftex
+    ARGS	${TEXFILE}
     )
 #
 # we need the additional env to accomodate out-of-source builds
