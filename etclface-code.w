@@ -44,7 +44,6 @@ The \etf commands are collected in a number of groups.
 #include <tcl.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <erl_interface.h>
 #include <ei.h>
 
 @<Command declarations@>;

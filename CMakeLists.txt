@@ -3,7 +3,7 @@
 # Copyright (c) 2013 Fred Youhanaie
 # All rights reserved.
 
-cmake_minimum_required (VERSION 2.8)
+cmake_minimum_required (VERSION 3.0)
 
 project (etclface C)
 
@@ -93,7 +93,7 @@ add_definitions (-D_THREAD_SAFE -D_REENTRANT -DPOSIX_THREADS -D_POSIX_THREAD_SAF
 #
 # Create a shared object (libetclface.so)
 add_library (etclface SHARED ${ETCLFACE_SRC})
-set (extra_libs erl_interface ei pthread)
+set (extra_libs ei pthread)
 #
 # by default allow use of Tcl Stub library, but user can change it.
 set (USE_TCL_STUBS TRUE CACHE BOOL "Use Tcl Stubs Library?")
