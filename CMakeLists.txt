@@ -3,7 +3,7 @@
 # Copyright (c) 2013 Fred Youhanaie
 # All rights reserved.
 
-cmake_minimum_required (VERSION 3.0)
+cmake_minimum_required (VERSION 3.29)
 
 project (etclface C)
 
@@ -31,17 +31,29 @@ find_program (ERL_PROG_PATH "erl")
 if ( ${ERL_PROG_PATH} STREQUAL "ERL_PROG_PATH-NOTFOUND" )
     message(FATAL_ERROR "erlang not in path")
 else ( ${ERL_PROG_PATH} STREQUAL "ERL_PROG_PATH-NOTFOUND" )
-    get_filename_component(ERL_PATH ${ERL_PROG_PATH} PATH)
-    get_filename_component(ERL_ROOT ${ERL_PATH} PATH)
+    message("erl_prog_path ${ERL_PROG_PATH}")
+
+    file(REAL_PATH ${ERL_PROG_PATH} ERL_REAL_PATH)
+    message("erl_real_path ${ERL_REAL_PATH}")
+
+    cmake_path(GET ERL_REAL_PATH PARENT_PATH ERL_BIN_DIR)
+    message("erl_bin_dir ${ERL_BIN_DIR}")
+
+    cmake_path(GET ERL_BIN_DIR PARENT_PATH ERL_ROOT)
+    message("erl_root ${ERL_ROOT}")
+
     set (ERLIFACE_INC_DIR "${ERL_ROOT}/usr/include"
 	CACHE PATH "erl_interface.h include directory."
 	)
     set (ERLIFACE_LIB_DIR "${ERL_ROOT}/usr/lib"
 	CACHE PATH "erl_interface and ei lib directory."
 	)
+
     unset (ERL_PROG_PATH)
-    unset (ERL_PATH)
+    unset (ERL_REAL_PATH)
+    unset (ERL_BIN_DIR)
     unset (ERL_ROOT)
+
 endif ( ${ERL_PROG_PATH} STREQUAL "ERL_PROG_PATH-NOTFOUND" )
 
 find_package (TclStub REQUIRED)
