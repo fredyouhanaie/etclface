@@ -92,7 +92,7 @@ A newly received buffer will contain the version magic token at
 the start of the buffer, this token needs to be extracted with
 [cmd etclface::decode_version] before further terms can be extracted.
 
-The buffers are destroyed with [cmd etclface::xb_free]. 
+The buffers are destroyed with [cmd etclface::xb_free].
 
 [section {COMMANDS}]
 

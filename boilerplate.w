@@ -30,10 +30,10 @@
 %% SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 \def\topofcontents{
-	\leftline{\sc\today\ at \hours}\bigskip\bigskip
-	\centerline{\titlefont\title}
-	\vskip 15pt \centerline{\author} \vfil
-	\vskip 15pt \centerline{\version} \vfil
+    \leftline{\sc\today\ at \hours}\bigskip\bigskip
+    \centerline{\titlefont\title}
+    \vskip 15pt \centerline{\author} \vfil
+    \vskip 15pt \centerline{\version} \vfil
 }
 
 \font\ninett=cmtt9

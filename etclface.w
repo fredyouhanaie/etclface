@@ -44,23 +44,23 @@
 \def\version{(Version 0.1)}
 
 \ifx\pdfoutput\undefined\else
-	\pdfinfo{
-		/Title	(\title)
-		/Author	(\author)
-	}
+    \pdfinfo{
+        /Title	(\title)
+        /Author	(\author)
+    }
 \fi
 
 @i boilerplate.w
 
 %% \fig{file} will insert an eps/pdf picture file
 \def\fig#1{
-	\medskip
-	\ifx\pdfoutput\undefined
-		\input epsf.tex \epsfbox{#1.eps}
-	\else
-		\pdfximage {#1.pdf}\pdfrefximage\pdflastximage
-	\fi
-	\medskip
+    \medskip
+    \ifx\pdfoutput\undefined
+        \input epsf.tex \epsfbox{#1.eps}
+    \else
+        \pdfximage {#1.pdf}\pdfrefximage\pdflastximage
+    \fi
+    \medskip
 }
 
 %% \url will create the proper links for the PDF files.

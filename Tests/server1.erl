@@ -7,17 +7,16 @@
 %	if it receives a PID, it will respopnd with its own PID
 
 start() ->
-	register(?MODULE, spawn(?MODULE, init, [])).
+    register(?MODULE, spawn(?MODULE, init, [])).
 
 init() ->
-	loop().
+    loop().
 
 loop() ->
-	receive
-		PID when is_pid(PID) ->
-			io:format("~p: Received PID >~p<~n", [?MODULE, PID]),
-			PID ! self();
-		ANY -> io:format("~p: Received >~p<~n", [?MODULE, ANY])
-	end,
-	loop().
-
+    receive
+        PID when is_pid(PID) ->
+            io:format("~p: Received PID >~p<~n", [?MODULE, PID]),
+            PID ! self();
+        ANY -> io:format("~p: Received >~p<~n", [?MODULE, ANY])
+    end,
+    loop().
