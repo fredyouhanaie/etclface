@@ -1,6 +1,6 @@
 # -*- cmake-tab-width: 4; -*-
 
-# Copyright (c) 2013 Fred Youhanaie
+# Copyright (c) 2013-2024 Fred Youhanaie
 # All rights reserved.
 
 cmake_minimum_required (VERSION 3.29)

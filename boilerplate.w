@@ -2,7 +2,7 @@
 % boilerplate.w
 %	Title page and copyright notice, no C code here.
 
-%% Copyright (c) 2013, Fred Youhanaie
+%% Copyright (c) 2013-2024, Fred Youhanaie
 %% All rights reserved.
 %%
 %% Redistribution and use in source and binary forms, with or without
@@ -39,11 +39,11 @@
 \font\ninett=cmtt9
 \def\botofcontents{\vskip 0pt plus 1filll
 \ninerm\baselineskip10pt
-\noindent Copyright \copyright\ 2013, \author
+\noindent Copyright \copyright\ 2013-2024, \author
 %%\bigskip\noindent
 \ninerm
 \fig{Figures/by-sa-compact}
 This document is licensed under the Creative Commons
-Attribution-ShareAlike 3.0 Unported License. To view a copy of this
-license, visit \url{http://creativecommons.org/licenses/by-sa/3.0/}.
+Attribution-ShareAlike 4.0 Unported License. To view a copy of this
+license, visit \url{http://creativecommons.org/licenses/by-sa/4.0/}.
 }

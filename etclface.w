@@ -2,7 +2,7 @@
 %% etclface-main.w
 %%	Main module of the etclface cweb files.
 
-%% Copyright (c) 2013 Fred Youhanaie
+%% Copyright (c) 2013-2024 Fred Youhanaie
 %% All rights reserved.
 %%
 %% Redistribution and use in source and binary forms, with or without
